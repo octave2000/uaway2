@@ -111,7 +111,7 @@ export default async function JourneysPage() {
         <TabsContent value="posted" className="mt-6 flex flex-col gap-4">
            {myJourneys.length === 0 ? (
              <div className="text-center p-8 border rounded-lg bg-muted/10 text-muted-foreground">
-               You haven't posted any journeys yet.
+               You haven&apos;t posted any journeys yet.
              </div>
            ) : (
              myJourneys.map((data) => (

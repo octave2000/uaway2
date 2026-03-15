@@ -52,7 +52,7 @@ export default async function BookingsPage() {
         <Card className="flex flex-col items-center justify-center p-12 text-center border-dashed bg-muted/30 mt-8 rounded-2xl">
            <Calendar className="w-12 h-12 text-muted-foreground/20 mb-4" />
            <CardTitle className="mb-2">No bookings yet</CardTitle>
-           <CardDescription>You haven't booked any journeys. Discover rides on the home page.</CardDescription>
+           <CardDescription>You haven&apos;t booked any journeys. Discover rides on the home page.</CardDescription>
            <Button asChild className="mt-4" variant="secondary"><Link href="/dashboard/journeys">Explore Rides</Link></Button>
         </Card>
       ) : (

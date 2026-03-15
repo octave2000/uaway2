@@ -9,10 +9,11 @@
 - [x] Journey posting & Searching
 - [x] Booking & Real-time Seat allocation
 - [x] HubMail Integration for Notifications
-- [x] Payment Gateway Integration (M-Pesa hint)
 - [x] Ride lifecycle (Ongoing -> Completed)
 - [x] Rating and Reviews system
+- [x] Role-Based Dashboard Switcher
 - [x] UI Design Refinement (No empty spaces)
 - [x] Real data connection (No mock data)
 - [x] Mobile-first premium experience
 - [x] Final Design Polish (Background patterns, Glassmorphism)
+- [x] Zero Lint Errors
