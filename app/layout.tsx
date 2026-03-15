@@ -1,5 +1,12 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Open_Sans } from "next/font/google";
+
+const fontSans = Open_Sans({
+  subsets: ["latin"],
+  variable: "--font-sans",
+});
+
 
 export const metadata: Metadata = {
   title: "Uaway Starter",
@@ -13,7 +20,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="min-h-screen bg-background text-foreground antialiased">{children}</body>
+      <body className={`${fontSans.variable} antialiased`}>
+        {children}
+      </body>
     </html>
   );
 }
+
+
