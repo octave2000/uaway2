@@ -14,7 +14,7 @@ export class UserAlreadyExistsError extends Error {
 
 export type AuthUserRecord = Pick<
   typeof users.$inferSelect,
-  "id" | "name" | "email" | "image" | "emailVerified" | "passwordHash"
+  "id" | "name" | "email" | "image" | "emailVerified" | "passwordHash" | "idPhoto" | "selfiePhoto" | "verified" | "phone"
 >;
 
 function isDatabaseError(error: unknown): error is { code: string } {
@@ -39,6 +39,10 @@ export async function getUserByEmail(email: string): Promise<AuthUserRecord | nu
       image: users.image,
       emailVerified: users.emailVerified,
       passwordHash: users.passwordHash,
+      idPhoto: users.idPhoto,
+      selfiePhoto: users.selfiePhoto,
+      verified: users.verified,
+      phone: users.phone,
     })
     .from(users)
     .where(eq(users.email, normalizeEmail(email)))
@@ -69,6 +73,10 @@ export async function createCredentialsUser(input: {
         image: users.image,
         emailVerified: users.emailVerified,
         passwordHash: users.passwordHash,
+        idPhoto: users.idPhoto,
+        selfiePhoto: users.selfiePhoto,
+        verified: users.verified,
+        phone: users.phone,
       });
 
     if (!user) {
