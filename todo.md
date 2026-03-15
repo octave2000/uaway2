@@ -1,9 +1,25 @@
-# To-Do
+# TODO - UAWAY
 
-- [x] Implement User Authentication (Login / Register)
-- [x] Implement User Profile & Verification forms (ID & Car)
-- [x] Journey Management (Post, Book, History)
-- [x] Integration with HubMail for notifications
-- [x] Payment gateway mock/integration (Flutterwave/M-Pesa)
-- [x] Ride lifecycle (Begin, End, Auto-complete)
-- [x] Rating and Reviews system (Placeholder implemented)
+## Phase 1: Authentication & Profile [DONE]
+- [x] Basic Auth setup
+- [x] Profile page with verification upload
+- [x] Vehicle management
+
+## Phase 2: Journey Management [DONE]
+- [x] Create Journey form
+- [x] Search Journeys with filters
+- [x] Journey details page
+
+## Phase 3: Booking & HubMail [DONE]
+- [x] Booking system
+- [x] HubMail notification for new bookings
+- [x] Booking confirmation page
+
+## Phase 4: Lifecycle & UI [DONE]
+- [x] Payment gateway hint (M-Pesa)
+- [x] Ride lifecycle (Ongoing -> Completed)
+- [x] Rating and Reviews system
+- [x] Premium Dashboard UI
+- [x] Background patterns & Texture
+- [x] Real-time data integration (No mock data)
+- [x] Mobile-responsive polish

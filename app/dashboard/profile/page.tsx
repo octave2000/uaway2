@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, AlertCircle, CarFront } from "lucide-react";
 import Link from "next/link";
 import { signOutUser } from "@/app/(auth)/actions";
+import { updateProfileAction, submitVerificationAction } from "./actions";
 
 export default async function ProfilePage() {
   const session = await auth();
@@ -45,69 +46,81 @@ export default async function ProfilePage() {
             )}
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Full Name</Label>
-              <Input id="name" defaultValue={user.name || ""} />
+        <form action={updateProfileAction}>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Full Name</Label>
+                <Input id="name" name="name" defaultValue={user.name || ""} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input id="email" defaultValue={user.email} disabled className="bg-muted/50" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone Number</Label>
+                <Input id="phone" name="phone" defaultValue={user.phone || ""} placeholder="+254..." />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" defaultValue={user.email} disabled />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number</Label>
-              <Input id="phone" defaultValue={user.phone || ""} placeholder="+254..." />
-            </div>
-          </div>
-          <Button>Save Changes</Button>
-        </CardContent>
+            <Button type="submit" className="font-bold">Save Changes</Button>
+          </CardContent>
+        </form>
       </Card>
 
-      <Card>
+      <Card className="relative overflow-hidden group">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-primary/10 transition-all pointer-events-none" />
         <CardHeader>
           <CardTitle>ID Verification</CardTitle>
           <CardDescription>Upload your ID and a selfie to get verified for booking and driving.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label>ID Document Photo</Label>
-              <label className="border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center text-center gap-2 cursor-pointer hover:bg-muted/50 transition-colors">
-                 <span className="text-sm font-medium text-muted-foreground">Click to upload ID</span>
-                 <input type="file" className="hidden" accept="image/*" />
-              </label>
+        <form action={submitVerificationAction}>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2 text-center group/id">
+                <Label className="text-left block mb-2 font-black uppercase text-[10px] tracking-widest text-muted-foreground">ID Document Photo</Label>
+                <label className="border-2 border-dashed rounded-2xl p-10 flex flex-col items-center justify-center text-center gap-3 cursor-pointer hover:bg-primary/5 transition-all border-border/60 hover:border-primary/50 relative group-hover/id:scale-[1.02]">
+                   <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                      <CheckCircle2 className="w-5 h-5 text-primary opacity-20 group-hover/id:opacity-100 transition-opacity" />
+                   </div>
+                   <span className="text-sm font-bold text-muted-foreground group-hover/id:text-primary transition-colors">Tap to select ID</span>
+                   <input type="file" className="hidden" accept="image/*" />
+                </label>
+              </div>
+              <div className="space-y-2 text-center group/selfie">
+                <Label className="text-left block mb-2 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Selfie Photo</Label>
+                <label className="border-2 border-dashed rounded-2xl p-10 flex flex-col items-center justify-center text-center gap-3 cursor-pointer hover:bg-primary/5 transition-all border-border/60 hover:border-primary/50 relative group-hover/selfie:scale-[1.02]">
+                   <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                      <CheckCircle2 className="w-5 h-5 text-primary opacity-20 group-hover/selfie:opacity-100 transition-opacity" />
+                   </div>
+                   <span className="text-sm font-bold text-muted-foreground group-hover/selfie:text-primary transition-colors">Tap to select Selfie</span>
+                   <input type="file" className="hidden" accept="image/*" />
+                </label>
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label>Selfie Photo</Label>
-              <label className="border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center text-center gap-2 cursor-pointer hover:bg-muted/50 transition-colors">
-                 <span className="text-sm font-medium text-muted-foreground">Click to upload Selfie</span>
-                 <input type="file" className="hidden" accept="image/*" />
-              </label>
-            </div>
-          </div>
-          <Button variant="secondary" className="w-full">Submit Verification</Button>
-        </CardContent>
+            <Button variant="secondary" className="w-full font-black uppercase tracking-widest py-6 rounded-2xl shadow-lg border-none">Submit for Verification</Button>
+          </CardContent>
+        </form>
       </Card>
 
-      <Card className="bg-primary/5 border-primary/20">
+      <Card className="bg-primary shadow-xl border-none relative overflow-hidden group">
+        <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CarFront className="w-5 h-5 text-primary" />
+          <CardTitle className="flex items-center gap-3 text-white">
+            <CarFront className="w-6 h-6" />
             My Vehicles
           </CardTitle>
-          <CardDescription>Manage your cars to start posting journeys.</CardDescription>
+          <CardDescription className="text-white/70">Manage your cars to start posting journeys.</CardDescription>
         </CardHeader>
         <CardContent>
-          <Button asChild variant="default" className="w-full font-semibold">
-            <Link href="/dashboard/cars">Manage Vehicles</Link>
+          <Button asChild variant="secondary" className="w-full font-black uppercase tracking-widest py-6 rounded-xl bg-white text-primary hover:bg-white/90 border-none">
+            <Link href="/dashboard/cars">Vehicle Fleet</Link>
           </Button>
         </CardContent>
       </Card>
 
-      <div className="pt-4 border-t">
+      <div className="pt-8 mb-12">
         <form action={signOutUser}>
-          <Button variant="destructive" className="w-full md:w-auto" type="submit">Sign Out</Button>
+          <Button variant="ghost" className="w-full font-bold text-muted-foreground hover:text-destructive hover:bg-destructive/10 border-border/40" type="submit">Sign Out of Account</Button>
         </form>
       </div>
     </div>

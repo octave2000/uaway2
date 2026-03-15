@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Users, QrCode, CheckCircle2 } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
 import { endJourneyAction } from "./actions";
 
@@ -70,10 +71,10 @@ export default async function ManageJourneyPage(props: { params: Promise<{ id: s
                  {journeyBookings.map((b) => (
                    <div key={b.booking.id} className="flex items-center justify-between p-4 border rounded-lg bg-card hover:bg-muted/10 transition-colors">
                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full border overflow-hidden shrink-0 bg-secondary/10">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={b.client.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${b.client.name}`} alt="client" className="w-full h-full object-cover" />
-                        </div>
+                        <Avatar className="w-10 h-10 border shrink-0">
+                          <AvatarImage src={b.client.image || undefined} />
+                          <AvatarFallback className="text-sm bg-muted">{b.client.name?.charAt(0) || "U"}</AvatarFallback>
+                        </Avatar>
                         <div className="flex flex-col">
                            <span className="font-semibold">{b.client.name}</span>
                            <span className="text-xs text-muted-foreground">{b.client.phone || "No phone provided"} • {b.booking.seatsBooked} Seat(s)</span>

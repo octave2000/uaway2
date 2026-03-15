@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, Calendar, MapPin, Users, Briefcase, Info, CheckCircle2 } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
 import { format } from "date-fns";
 import { bookJourneyAction } from "./actions";
@@ -88,10 +89,10 @@ export default async function JourneyDetailsPage(
         <CardContent className="p-0">
            <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x border-b">
               <div className="p-6 flex items-start gap-4">
-                 <div className="w-12 h-12 rounded-full border overflow-hidden shrink-0 mt-1 bg-background">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={data.driver.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.driver.name}`} alt="driver" className="w-full h-full object-cover" />
-                 </div>
+                 <Avatar className="w-12 h-12 border shrink-0 mt-1">
+                    <AvatarImage src={data.driver.image || undefined} />
+                    <AvatarFallback className="text-lg bg-muted">{data.driver.name?.charAt(0) || "U"}</AvatarFallback>
+                 </Avatar>
                  <div className="flex flex-col gap-1">
                     <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Driver</span>
                     <span className="font-bold text-lg">{data.driver.name}</span>

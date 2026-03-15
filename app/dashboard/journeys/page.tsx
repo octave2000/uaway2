@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Calendar, Users, Briefcase, ChevronRight, Plus } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
@@ -94,10 +95,10 @@ export default async function JourneysPage() {
                     </div>
                     <div className="ml-auto flex items-center gap-2 text-foreground group-hover:text-primary transition-colors">
                       <span className="text-[10px] md:text-sm">Driver: {data.driver.name?.split(' ')[0]}</span>
-                      <div className="w-6 h-6 rounded-full bg-muted border overflow-hidden shrink-0">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={data.driver.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.driver.name}`} alt="avatar" className="w-full h-full object-cover" />
-                      </div>
+                      <Avatar className="w-6 h-6 border shrink-0">
+                        <AvatarImage src={data.driver.image || undefined} />
+                        <AvatarFallback className="text-[10px] bg-muted">{data.driver.name?.charAt(0) || "U"}</AvatarFallback>
+                      </Avatar>
                     </div>
                   </div>
                   <Button asChild className="w-full mt-2" variant="outline">
