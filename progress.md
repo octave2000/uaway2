@@ -11,9 +11,9 @@
 - [x] HubMail Integration for Notifications
 - [x] Ride lifecycle (Ongoing -> Completed)
 - [x] Rating and Reviews system
+- [x] Modern Homepage with Journey Feed
+- [x] PWA Readiness (Manifest, Icons, Meta tags)
+- [x] Polished Login/Register experience
 - [x] Role-Based Dashboard Switcher & Onboarding
-- [x] UI Design Refinement (No empty spaces)
-- [x] Real data connection (No mock data)
-- [x] Mobile-first premium experience
 - [x] Final Design Polish (Background patterns, Glassmorphism)
 - [x] Zero Lint Errors
