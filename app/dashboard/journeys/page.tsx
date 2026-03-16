@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { cars, journeys, users } from "@/db/schema";
-import { and, desc, eq, ne } from "drizzle-orm";
+import { and, desc, eq, gte, ilike, lt, ne } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +20,7 @@ import {
 import Link from "next/link";
 import { format } from "date-fns";
 import { requireAuthenticatedUser } from "@/lib/auth/roles";
+import { autoCompleteExpiredJourneys } from "@/lib/journeys/lifecycle";
 
 function getJourneyStatusTone(status: "active" | "ongoing" | "completed" | "cancelled") {
   switch (status) {
@@ -34,14 +35,45 @@ function getJourneyStatusTone(status: "active" | "ongoing" | "completed" | "canc
   }
 }
 
-export default async function JourneysPage() {
+type JourneysPageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export default async function JourneysPage({ searchParams }: JourneysPageProps) {
   const { userId, role } = await requireAuthenticatedUser();
+  const params = await searchParams;
+
+  await autoCompleteExpiredJourneys();
 
   if (!role) {
     redirect("/dashboard");
   }
 
   if (role === "passenger") {
+    const origin = typeof params.origin === "string" ? params.origin.trim() : "";
+    const destination = typeof params.destination === "string" ? params.destination.trim() : "";
+    const date = typeof params.date === "string" ? params.date : "";
+
+    const filters = [eq(journeys.status, "active"), ne(journeys.driverId, userId)];
+
+    if (origin) {
+      filters.push(ilike(journeys.origin, `%${origin}%`));
+    }
+
+    if (destination) {
+      filters.push(ilike(journeys.destination, `%${destination}%`));
+    }
+
+    if (date) {
+      const startOfDay = new Date(`${date}T00:00:00`);
+      const endOfDay = new Date(`${date}T23:59:59.999`);
+
+      if (!Number.isNaN(startOfDay.getTime()) && !Number.isNaN(endOfDay.getTime())) {
+        filters.push(gte(journeys.departureTime, startOfDay));
+        filters.push(lt(journeys.departureTime, endOfDay));
+      }
+    }
+
     const exploreJourneys = await db
       .select({
         journey: journeys,
@@ -55,7 +87,7 @@ export default async function JourneysPage() {
       .from(journeys)
       .innerJoin(users, eq(journeys.driverId, users.id))
       .innerJoin(cars, eq(journeys.carId, cars.id))
-      .where(and(eq(journeys.status, "active"), ne(journeys.driverId, userId)))
+      .where(and(...filters))
       .orderBy(desc(journeys.departureTime));
 
     const totalSeats = exploreJourneys.reduce((sum, item) => sum + item.journey.seatsAvailable, 0);
@@ -99,7 +131,7 @@ export default async function JourneysPage() {
           </div>
         </div>
 
-        <JourneySearch />
+        <JourneySearch targetPath="/dashboard/journeys" />
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {exploreJourneys.length === 0 ? (

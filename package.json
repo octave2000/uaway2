@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
+    "db:seed": "node db/seed.mjs",
     "db:generate": "drizzle-kit generate --config=db/drizzle.config.ts",
     "db:migrate": "drizzle-kit migrate --config=db/drizzle.config.ts",
     "db:push": "drizzle-kit push --config=db/drizzle.config.ts",

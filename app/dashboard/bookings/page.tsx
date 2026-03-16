@@ -79,9 +79,13 @@ export default async function BookingsPage({ searchParams }: BookingsPageProps) 
         .orderBy(desc(payoutRequests.createdAt))
     : [];
 
-  const latestAdvanceRequestByBookingId = new Map(
-    advanceRequests.map((request) => [request.bookingId, request]),
-  );
+  const latestAdvanceRequestByBookingId = new Map<string, (typeof advanceRequests)[number]>();
+
+  for (const request of advanceRequests) {
+    if (!latestAdvanceRequestByBookingId.has(request.bookingId)) {
+      latestAdvanceRequestByBookingId.set(request.bookingId, request);
+    }
+  }
 
   const notice = typeof params.notice === "string" ? params.notice : null;
 

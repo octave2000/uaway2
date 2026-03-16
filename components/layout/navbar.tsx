@@ -11,7 +11,15 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
-export function Navbar({ session }: { session: Session | null }) {
+type NavbarRole = "passenger" | "driver" | null;
+
+export function Navbar({
+  session,
+  role,
+}: {
+  session: Session | null;
+  role: NavbarRole;
+}) {
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
@@ -21,6 +29,22 @@ export function Navbar({ session }: { session: Session | null }) {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  const navLinks =
+    role === "driver"
+      ? [
+          { href: "/dashboard/journeys", label: "Driver Journeys" },
+          { href: "/dashboard/payments", label: "Payments" },
+        ]
+      : role === "passenger"
+        ? [
+            { href: "/dashboard/journeys", label: "Find Ride" },
+            { href: "/dashboard/bookings", label: "My Bookings" },
+          ]
+        : [
+            { href: "/dashboard/journeys", label: "Find Ride" },
+            { href: "/dashboard/journeys/new", label: "Post Ride" },
+          ];
 
   return (
     <nav className={cn(
@@ -47,16 +71,13 @@ export function Navbar({ session }: { session: Session | null }) {
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center gap-2 bg-muted/30 p-1.5 rounded-full border border-border/50">
-          <Link href="/dashboard/journeys">
-            <Button variant="ghost" size="sm" className="rounded-full px-5 font-black uppercase tracking-widest text-[10px]">
-              Find Ride
-            </Button>
-          </Link>
-          <Link href="/dashboard/journeys/new">
-            <Button variant="ghost" size="sm" className="rounded-full px-5 font-black uppercase tracking-widest text-[10px]">
-              Post Ride
-            </Button>
-          </Link>
+          {navLinks.map((link) => (
+            <Link key={link.href} href={link.href}>
+              <Button variant="ghost" size="sm" className="rounded-full px-5 font-black uppercase tracking-widest text-[10px]">
+                {link.label}
+              </Button>
+            </Link>
+          ))}
         </div>
 
         {/* Action Buttons */}

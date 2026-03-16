@@ -65,9 +65,13 @@ export default async function PaymentsPage() {
     .where(eq(payoutRequests.driverId, userId))
     .orderBy(desc(payoutRequests.createdAt));
 
-  const latestRequestByPaymentId = new Map(
-    requests.map((request) => [request.paymentId, request]),
-  );
+  const latestRequestByPaymentId = new Map<string, (typeof requests)[number]>();
+
+  for (const request of requests) {
+    if (!latestRequestByPaymentId.has(request.paymentId)) {
+      latestRequestByPaymentId.set(request.paymentId, request);
+    }
+  }
 
   const totals = paymentRows.reduce(
     (acc, row) => {
