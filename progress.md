@@ -20,3 +20,7 @@
 ## Notes
 - Previous tracker files overstated project completion; they have been reset to match the real implementation state.
 - Current focus is correctness first: permissions, route boundaries, and consistent mobile-friendly UI for each role.
+- Commits created in this pass:
+  - `a8dfa6a` `fix: enforce dashboard role boundaries`
+  - `88a823b` `feat: add vehicle detail management`
+  - `9d1f509` `feat: add driver payments overview`
