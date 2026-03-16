@@ -200,17 +200,17 @@ export function PassengerDashboard({
             <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.2),transparent)]" />
             <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-primary/20 rounded-full blur-3xl group-hover:bg-primary/30 transition-all" />
             <CardHeader className="p-6">
-              <CardTitle className="text-white flex items-center gap-2 text-2xl font-black">
+              <CardTitle className="text-background flex items-center gap-2 text-2xl font-black">
                 <ShieldCheck className="w-8 h-8 text-primary" />
                 Trust
               </CardTitle>
-              <CardDescription className="text-white/50 font-bold">Verified members enjoy 2x trust.</CardDescription>
+              <CardDescription className="text-background/50 font-bold">Verified members enjoy 2x trust.</CardDescription>
             </CardHeader>
             <CardContent className="p-6 pt-0">
-              <p className="text-sm font-medium leading-relaxed mb-6 text-white/80">
+              <p className="text-sm font-medium leading-relaxed mb-6 text-background/80">
                 Maximize your safety and visibility by completing your identity verification today.
               </p>
-              <Button className="w-full bg-primary text-white hover:bg-primary/90 font-black h-14 rounded-2xl shadow-lg border-none text-lg" asChild>
+              <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-black h-14 rounded-2xl shadow-lg border-none text-lg" asChild>
                 <Link href="/dashboard/profile">Get Verified</Link>
               </Button>
             </CardContent>

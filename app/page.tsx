@@ -48,14 +48,14 @@ export default async function Home() {
                   <div className="flex flex-col md:flex-row items-center gap-2">
                     <div className="flex-1 w-full flex items-center px-4 h-12 md:h-14">
                       <Search className="w-5 h-5 text-primary mr-3 shrink-0" />
-                      <input 
-                        type="text" 
+                      <input
+                        type="text"
                         placeholder="Where are you heading?"
                         className="flex-1 bg-transparent outline-none text-sm md:text-lg font-bold placeholder:text-muted-foreground/40 w-full"
                       />
                     </div>
                     <div className="w-full md:w-auto">
-                      <Button className="w-full md:w-auto h-12 md:h-14 rounded-[1rem] md:rounded-[1.8rem] px-8 bg-primary text-white hover:bg-primary/90 font-black text-sm md:text-base shadow-lg shadow-primary/20 transition-all duration-500">
+                      <Button className="w-full md:w-auto h-12 md:h-14 rounded-[1rem] md:rounded-[1.8rem] px-8 bg-primary text-primary-foreground hover:bg-primary/90 font-black text-sm md:text-base shadow-lg shadow-primary/20 transition-all duration-500">
                         Search Rides
                       </Button>
                     </div>
@@ -83,7 +83,7 @@ export default async function Home() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {availableJourneys.map((data) => (
-                <Link 
+                <Link
                   key={data.journey.id}
                   href={`/dashboard/journeys/${data.journey.id}`}
                   className="group"
@@ -107,7 +107,7 @@ export default async function Home() {
                           </div>
                         </div>
                         <div className="bg-primary/10 px-2 py-0.5 rounded-full">
-                           <span className="text-[10px] font-black text-primary uppercase">KES {data.journey.pricePerSeat}</span>
+                          <span className="text-[10px] font-black text-primary uppercase">KES {data.journey.pricePerSeat}</span>
                         </div>
                       </div>
 
@@ -124,7 +124,7 @@ export default async function Home() {
                         </div>
                         <div className="flex items-start gap-4">
                           <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center shrink-0 z-10 border border-border">
-                             <MapPin className="w-3.5 h-3.5 text-secondary" />
+                            <MapPin className="w-3.5 h-3.5 text-secondary" />
                           </div>
                           <div className="flex flex-col pt-1">
                             <span className="text-[8px] font-black text-muted-foreground uppercase leading-none mb-1">To</span>
@@ -147,14 +147,11 @@ export default async function Home() {
                   </Card>
                 </Link>
               ))}
-              
+
               {availableJourneys.length === 0 && (
                 <div className="col-span-full py-20 flex flex-col items-center gap-4 bg-muted/20 rounded-[2rem] border-2 border-dashed border-border/50">
-                   <Car className="w-12 h-12 text-muted-foreground/20" />
-                   <h3 className="text-lg font-bold text-muted-foreground/40 text-center px-4">No active journeys found</h3>
-                   <Button asChild variant="outline" size="sm" className="rounded-full font-black uppercase tracking-widest text-[10px]">
-                     <Link href="/register">Post First Journey</Link>
-                   </Button>
+                  <Car className="w-12 h-12 text-muted-foreground/20" />
+                  <h3 className="text-lg font-bold text-muted-foreground/40 text-center px-4">No active journeys found</h3>
                 </div>
               )}
             </div>
@@ -163,51 +160,51 @@ export default async function Home() {
 
         {/* Benefits Section */}
         <section className="py-20 border-t border-border/50">
-           <div className="container mx-auto px-4 max-w-5xl">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                {[
-                  { icon: ShieldCheck, title: "Verified", desc: "Safety first with official ID checks.", color: "primary" },
-                  { icon: Zap, title: "Instant", desc: "No waiting. Book seats in seconds.", color: "secondary" },
-                  { icon: Users, title: "Social", desc: "Share costs and save the planet.", color: "primary" }
-                ].map((item, i) => (
-                  <div key={i} className="flex flex-col items-center text-center gap-4 p-8 rounded-[2rem] bg-background border border-border/50 shadow-sm hover:shadow-md transition-shadow">
-                    <div className={`w-12 h-12 rounded-2xl bg-${item.color}/10 flex items-center justify-center text-${item.color}`}>
-                      <item.icon className="w-6 h-6" />
-                    </div>
-                    <h3 className="text-lg font-black tracking-tight uppercase tracking-widest">{item.title}</h3>
-                    <p className="text-xs font-medium text-muted-foreground leading-relaxed">{item.desc}</p>
+          <div className="container mx-auto px-4 max-w-5xl">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {[
+                { icon: ShieldCheck, title: "Verified", desc: "Safety first with official ID checks.", color: "primary" },
+                { icon: Zap, title: "Instant", desc: "No waiting. Book seats in seconds.", color: "secondary" },
+                { icon: Users, title: "Social", desc: "Share costs and save the planet.", color: "primary" }
+              ].map((item, i) => (
+                <div key={i} className="flex flex-col items-center text-center gap-4 p-8 rounded-[2rem] bg-background border border-border/50 shadow-sm hover:shadow-md transition-shadow">
+                  <div className={`w-12 h-12 rounded-2xl bg-${item.color}/10 flex items-center justify-center text-${item.color}`}>
+                    <item.icon className="w-6 h-6" />
                   </div>
-                ))}
-              </div>
-              
-              <div className="mt-20 p-10 rounded-[3rem] bg-primary text-white text-center relative overflow-hidden group">
-                 <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 transition-transform group-hover:scale-110" />
-                 <h2 className="text-3xl md:text-5xl font-black tracking-tighter mb-4">Have an extra seat?</h2>
-                 <p className="text-lg font-medium opacity-90 mb-8 max-w-2xl mx-auto">Turn your empty car seats into extra cash while helping others travel sustainably.</p>
-                 <Button asChild size="lg" className="rounded-full bg-white text-primary hover:bg-white/90 font-black uppercase tracking-widest text-xs h-14 px-10">
-                   <Link href="/dashboard/journeys/new">Add Your Journey</Link>
-                 </Button>
-              </div>
-           </div>
+                  <h3 className="text-lg font-black tracking-tight uppercase tracking-widest">{item.title}</h3>
+                  <p className="text-xs font-medium text-muted-foreground leading-relaxed">{item.desc}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-20 p-10 rounded-[3rem] bg-primary text-primary-foreground text-center relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 transition-transform group-hover:scale-110" />
+              <h2 className="text-3xl md:text-5xl font-black tracking-tighter mb-4">Have an extra seat?</h2>
+              <p className="text-lg font-medium opacity-90 mb-8 max-w-2xl mx-auto">Turn your empty car seats into extra cash while helping others travel sustainably.</p>
+              <Button asChild size="lg" className="rounded-full bg-black uppercase tracking-widest text-xs h-14 px-10">
+                <Link href="/dashboard/journeys/new">Add Your Journey</Link>
+              </Button>
+            </div>
+          </div>
         </section>
       </main>
 
       <footer className="py-12 border-t border-border/50 bg-background">
         <div className="container mx-auto px-4 max-w-7xl flex flex-col items-center gap-8">
-           <Link href="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg overflow-hidden relative border border-border/50 shadow-sm">
-                <Image src="/logo.jpg" alt="Logo" fill className="object-cover" />
-              </div>
-              <span className="text-xl font-black tracking-tighter uppercase italic">UAWAY</span>
-            </Link>
-            
-            <div className="flex flex-wrap justify-center items-center gap-8">
-              <Link href="#" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors">Privacy</Link>
-              <Link href="#" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors">Terms</Link>
-              <Link href="#" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors">Support</Link>
+          <Link href="/" className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg overflow-hidden relative border border-border/50 shadow-sm">
+              <Image src="/logo.jpg" alt="Logo" fill className="object-cover" />
             </div>
-            
-            <p className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.3em] opacity-40">© 2026 UAWAY LTD • KENYA</p>
+            <span className="text-xl font-black tracking-tighter uppercase italic">UAWAY</span>
+          </Link>
+
+          <div className="flex flex-wrap justify-center items-center gap-8">
+            <Link href="#" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors">Privacy</Link>
+            <Link href="#" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors">Terms</Link>
+            <Link href="#" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors">Support</Link>
+          </div>
+
+          <p className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.3em] opacity-40">© 2026 UAWAY LTD • KENYA</p>
         </div>
       </footer>
     </div>

@@ -13,6 +13,7 @@ import Link from "next/link";
 import { signOutUser } from "@/app/(auth)/actions";
 import { updateProfileAction, submitVerificationAction } from "./actions";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default async function ProfilePage() {
   const session = await auth();
@@ -114,7 +115,15 @@ export default async function ProfilePage() {
                 </button>
               </form>
             </div>
-            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">This role will be shown by default when you log in.</p>
+          </div>
+          <div className="space-y-3 pt-6 border-t border-border/40">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-sm font-bold">Display Theme</Label>
+                <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Switch between light and dark mode.</p>
+              </div>
+              <ThemeToggle className="w-12 h-12" />
+            </div>
           </div>
         </CardContent>
       </Card>
