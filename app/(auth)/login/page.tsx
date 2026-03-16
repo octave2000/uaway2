@@ -1,12 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-
 import { auth } from "@/auth";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
+import { Car } from "lucide-react";
 import {
   sendMagicLink,
   signInWithCredentials,
@@ -43,83 +42,99 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       : `/register?callbackUrl=${encodeURIComponent(callbackUrl)}`;
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-muted/40 px-4 py-10">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-4">
-          <div className="flex items-center justify-between gap-4">
-            <CardTitle>Sign in</CardTitle>
-            <Button asChild variant="link" className="h-auto px-0">
-              <Link href={registerHref}>Register</Link>
-            </Button>
-          </div>
-          {noticeMessage ? (
-            <p className="rounded-md border bg-muted px-3 py-2 text-sm">{noticeMessage}</p>
-          ) : null}
-          {errorMessage ? (
-            <p className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {errorMessage}
-            </p>
-          ) : null}
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <form action={signInWithGoogle}>
-            <input name="redirectTo" type="hidden" value={callbackUrl} />
-            <Button className="w-full" type="submit" variant="outline">
-              Continue with Google
-            </Button>
-          </form>
+    <main className="relative flex min-h-screen items-center justify-center px-4 py-20 bg-background overflow-hidden">
+      {/* Background Decor */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute -top-[20%] -right-[10%] w-[60%] h-[60%] bg-primary/5 rounded-full blur-[120px]" />
+        <div className="absolute top-[40%] -left-[10%] w-[50%] h-[50%] bg-secondary/5 rounded-full blur-[100px]" />
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150 pointer-events-none" />
+      </div>
 
-          <div className="space-y-4">
-            <div className="text-sm font-medium">Email and password</div>
-            <form action={signInWithCredentials} className="space-y-4">
+      <div className="w-full max-w-md relative z-10 flex flex-col gap-8">
+        <Link href="/" className="flex items-center gap-2 self-center group">
+          <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20 group-hover:scale-105 transition-transform">
+            <Car className="w-7 h-7 text-white" />
+          </div>
+          <span className="text-2xl font-black tracking-tighter uppercase">UAWAY</span>
+        </Link>
+
+        <Card className="rounded-[2.5rem] border-2 shadow-2xl shadow-primary/5 bg-background/80 backdrop-blur-xl overflow-hidden p-4">
+          <CardHeader className="text-center space-y-2">
+            <CardTitle className="text-3xl font-black tracking-tight">Welcome Back</CardTitle>
+            <CardDescription className="font-medium">Sign in to manage your journeys.</CardDescription>
+            
+            {noticeMessage ? (
+              <p className="mt-4 px-4 py-2 rounded-xl bg-muted/50 border text-xs font-bold uppercase tracking-wider text-muted-foreground">{noticeMessage}</p>
+            ) : null}
+            {errorMessage ? (
+              <p className="mt-4 px-4 py-2 rounded-xl border border-destructive/20 bg-destructive/10 text-xs font-bold uppercase tracking-wider text-destructive">
+                {errorMessage}
+              </p>
+            ) : null}
+          </CardHeader>
+          <CardContent className="space-y-8">
+            <form action={signInWithGoogle}>
+              <input name="redirectTo" type="hidden" value={callbackUrl} />
+              <Button className="w-full h-14 rounded-2xl text-base font-black border-2 hover:bg-muted/50 transition-all flex items-center gap-3" variant="outline" type="submit">
+                <svg className="w-5 h-5" viewBox="0 0 24 24">
+                   <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                   <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                   <path fill="#FBBC05" d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.83z" />
+                   <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.83c.87-2.6 3.3-4.53 6.16-4.53z" />
+                </svg>
+                Continue with Google
+              </Button>
+            </form>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
+              <div className="relative flex justify-center text-xs uppercase"><span className="bg-background px-4 text-muted-foreground font-black tracking-widest">Or login with</span></div>
+            </div>
+
+            <form action={signInWithCredentials} className="space-y-5">
               <input name="redirectTo" type="hidden" value={callbackUrl} />
               <div className="space-y-2">
-                <Label htmlFor="login-email">Email</Label>
+                <Label htmlFor="login-email" className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Email Address</Label>
                 <Input
                   id="login-email"
                   name="email"
-                  placeholder="you@example.com"
+                  placeholder="name@example.com"
                   required
                   type="email"
+                  className="h-14 rounded-2xl border-2 focus-visible:ring-primary/20 bg-muted/20"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="login-password">Password</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="login-password" className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Password</Label>
+                </div>
                 <Input
                   id="login-password"
                   name="password"
-                  placeholder="Password"
+                  placeholder="••••••••"
                   required
                   type="password"
+                  className="h-14 rounded-2xl border-2 focus-visible:ring-primary/20 bg-muted/20"
                 />
               </div>
-              <Button className="w-full" type="submit">
-                Sign in
+              <Button className="w-full h-14 rounded-2xl text-lg font-black shadow-xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95" type="submit">
+                Sign In
               </Button>
             </form>
-          </div>
 
-          <div className="space-y-4">
-            <div className="text-sm font-medium">Magic link</div>
-            <form action={sendMagicLink} className="space-y-4">
-              <input name="redirectTo" type="hidden" value={callbackUrl} />
-              <div className="space-y-2">
-                <Label htmlFor="magic-email">Email</Label>
-                <Input
-                  id="magic-email"
-                  name="email"
-                  placeholder="you@example.com"
-                  required
-                  type="email"
-                />
-              </div>
-              <Button className="w-full" type="submit" variant="secondary">
-                Send magic link
-              </Button>
-            </form>
-          </div>
-        </CardContent>
-      </Card>
+            <p className="text-center text-sm font-medium text-muted-foreground">
+              Don&apos;t have an account?{" "}
+              <Link href={registerHref} className="text-primary font-black hover:underline underline-offset-4">
+                Register now
+              </Link>
+            </p>
+          </CardContent>
+        </Card>
+
+        <p className="text-center text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em] px-10">
+          By continuing, you agree to UAWAY&apos;s Terms of Service and Privacy Policy.
+        </p>
+      </div>
     </main>
   );
 }
