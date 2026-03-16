@@ -69,6 +69,7 @@ interface MyJourney {
 
 interface DashboardShellProps {
   userName: string;
+  defaultRole: "passenger" | "driver";
   stats: {
     ridesTaken: number;
     ridesHosted: number;
@@ -87,11 +88,12 @@ interface DashboardShellProps {
 
 export function DashboardShell({ 
   userName, 
+  defaultRole,
   stats, 
   passengerData, 
   driverData 
 }: DashboardShellProps) {
-  const [role, setRole] = useState<"passenger" | "driver">("passenger");
+  const [role, setRole] = useState<"passenger" | "driver">(defaultRole);
 
   return (
     <div className="flex flex-col gap-8 p-4 md:p-8 w-full max-w-6xl mx-auto pb-24">
@@ -105,7 +107,7 @@ export function DashboardShell({
           </p>
         </div>
 
-        <Tabs defaultValue="passenger" onValueChange={(v) => setRole(v as "passenger" | "driver")} className="w-full md:w-auto">
+        <Tabs defaultValue={defaultRole} onValueChange={(v) => setRole(v as "passenger" | "driver")} className="w-full md:w-auto">
           <TabsList className="grid w-full grid-cols-2 h-12 p-1 bg-muted/30 backdrop-blur-md rounded-xl border border-border/50">
             <TabsTrigger value="passenger" className="rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm font-bold text-xs uppercase tracking-widest">
               Passenger

@@ -12,12 +12,15 @@ export async function updateProfileAction(formData: FormData) {
 
   const name = formData.get("name") as string;
   const phone = formData.get("phone") as string;
+  const defaultRole = formData.get("defaultRole") as string;
 
   await db.update(users).set({
     name,
     phone,
+    ...(defaultRole && { defaultRole: defaultRole as "passenger" | "driver" }),
   }).where(eq(users.id, session.user.id));
 
+  revalidatePath("/dashboard");
   revalidatePath("/dashboard/profile");
 }
 

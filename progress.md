@@ -11,7 +11,7 @@
 - [x] HubMail Integration for Notifications
 - [x] Ride lifecycle (Ongoing -> Completed)
 - [x] Rating and Reviews system
-- [x] Role-Based Dashboard Switcher
+- [x] Role-Based Dashboard Switcher & Onboarding
 - [x] UI Design Refinement (No empty spaces)
 - [x] Real data connection (No mock data)
 - [x] Mobile-first premium experience

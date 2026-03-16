@@ -14,6 +14,7 @@ export const users = pgTable("users", {
   selfiePhoto: text("selfie_photo"),
   verified: boolean("verified").default(false),
   phone: text("phone"),
+  defaultRole: text("default_role", { enum: ["passenger", "driver"] }),
 });
 
 export const accounts = pgTable(

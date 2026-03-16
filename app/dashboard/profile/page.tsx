@@ -8,10 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, AlertCircle, CarFront } from "lucide-react";
+import { CheckCircle2, AlertCircle, CarFront, MapPin } from "lucide-react";
 import Link from "next/link";
 import { signOutUser } from "@/app/(auth)/actions";
 import { updateProfileAction, submitVerificationAction } from "./actions";
+import { cn } from "@/lib/utils";
 
 export default async function ProfilePage() {
   const session = await auth();
@@ -65,6 +66,57 @@ export default async function ProfilePage() {
             <Button type="submit" className="font-bold">Save Changes</Button>
           </CardContent>
         </form>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Preferences</CardTitle>
+          <CardDescription>Customize your default experience.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="space-y-3">
+            <Label className="text-sm font-bold">Default Dashboard Mode</Label>
+            <div className="grid grid-cols-2 gap-4">
+              <form action={updateProfileAction} className="col-span-2 grid grid-cols-2 gap-4">
+                <input type="hidden" name="name" defaultValue={user.name || ""} />
+                <input type="hidden" name="phone" defaultValue={user.phone || ""} />
+                
+                <button 
+                  name="defaultRole" 
+                  value="passenger"
+                  type="submit"
+                  className={cn(
+                    "flex flex-col items-center gap-3 p-6 rounded-2xl border-2 transition-all",
+                    user.defaultRole === "passenger" 
+                      ? "border-primary bg-primary/5 shadow-sm" 
+                      : "border-border/50 hover:border-primary/30"
+                  )}
+                >
+                  <MapPin className={cn("w-6 h-6", user.defaultRole === "passenger" ? "text-primary" : "text-muted-foreground")} />
+                  <span className={cn("font-bold", user.defaultRole === "passenger" ? "text-primary" : "text-muted-foreground")}>Passenger</span>
+                  {user.defaultRole === "passenger" && <CheckCircle2 className="w-4 h-4 text-primary mt-1" />}
+                </button>
+
+                <button 
+                  name="defaultRole" 
+                  value="driver"
+                  type="submit"
+                  className={cn(
+                    "flex flex-col items-center gap-3 p-6 rounded-2xl border-2 transition-all",
+                    user.defaultRole === "driver" 
+                      ? "border-secondary bg-secondary/5 shadow-sm" 
+                      : "border-border/50 hover:border-secondary/30"
+                  )}
+                >
+                  <CarFront className={cn("w-6 h-6", user.defaultRole === "driver" ? "text-secondary" : "text-muted-foreground")} />
+                  <span className={cn("font-bold", user.defaultRole === "driver" ? "text-secondary" : "text-muted-foreground")}>Driver</span>
+                  {user.defaultRole === "driver" && <CheckCircle2 className="w-4 h-4 text-secondary mt-1" />}
+                </button>
+              </form>
+            </div>
+            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">This role will be shown by default when you log in.</p>
+          </div>
+        </CardContent>
       </Card>
 
       <Card className="relative overflow-hidden group">

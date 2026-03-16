@@ -4,6 +4,7 @@ import { journeys, users, cars, bookings, payments } from "@/db/schema";
 import { eq, desc, and, ne, count, sum } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
+import { OnboardingGate } from "@/components/dashboard/onboarding-gate";
 
 export default async function DashboardHome() {
   const session = await auth();
@@ -13,6 +14,15 @@ export default async function DashboardHome() {
   }
 
   const userId = session.user.id;
+
+  // Fetch the user's default role
+  const [userRecord] = await db
+    .select({ defaultRole: users.defaultRole })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+
+  const defaultRole = userRecord?.defaultRole as "passenger" | "driver" | null;
 
   // Fetch stats concurrently
   const [
@@ -65,23 +75,26 @@ export default async function DashboardHome() {
   ]);
 
   return (
-    <DashboardShell 
-      userName={session.user.name || "User"}
-      userImage={session.user.image}
-      stats={{
-        ridesTaken: ridesTakenCount[0].count,
-        ridesHosted: ridesHostedCount[0].count,
-        totalSpent: Number(totalSpentSum[0].total || 0),
-        totalEarned: Number(totalEarnedSum[0].total || 0)
-      }}
-      passengerData={{
-        recentJourneys,
-        upcomingBooking: upcomingBookings[0] || null
-      }}
-      driverData={{
-        myActiveJourneys,
-        pendingBookingsCount: pendingBookings[0].count
-      }}
-    />
+    <>
+      {!defaultRole && <OnboardingGate />}
+      <DashboardShell 
+        userName={session.user.name || "User"}
+        defaultRole={defaultRole || "passenger"}
+        stats={{
+          ridesTaken: ridesTakenCount[0].count,
+          ridesHosted: ridesHostedCount[0].count,
+          totalSpent: Number(totalSpentSum[0].total || 0),
+          totalEarned: Number(totalEarnedSum[0].total || 0)
+        }}
+        passengerData={{
+          recentJourneys,
+          upcomingBooking: upcomingBookings[0] || null
+        }}
+        driverData={{
+          myActiveJourneys,
+          pendingBookingsCount: pendingBookings[0].count
+        }}
+      />
+    </>
   );
 }
