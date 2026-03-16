@@ -27,13 +27,13 @@ interface MyJourney {
 interface DriverDashboardProps {
   userName: string;
   activeJourneys: MyJourney[];
-  pendingBookingsCount: number;
+  actionItemsCount: number;
 }
 
 export function DriverDashboard({
   userName,
   activeJourneys,
-  pendingBookingsCount
+  actionItemsCount
 }: DriverDashboardProps) {
   return (
     <div className="flex flex-col gap-8 w-full max-w-6xl mx-auto px-4 py-8">
@@ -61,7 +61,7 @@ export function DriverDashboard({
         <div className="lg:col-span-2 flex flex-col gap-8">
 
           {/* Notifications / Alerts */}
-          {pendingBookingsCount > 0 && (
+          {actionItemsCount > 0 && (
             <Card className="bg-orange-500/10 border-orange-500/20 shadow-xl relative overflow-hidden group rounded-[2rem] border-2">
               <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/10 rounded-full blur-3xl -mr-16 -mt-16" />
               <CardContent className="p-8 flex flex-col md:flex-row items-center gap-6">
@@ -70,14 +70,14 @@ export function DriverDashboard({
                 </div>
                 <div className="flex flex-col gap-1 text-center md:text-left">
                   <h3 className="text-2xl font-black text-orange-950 leading-tight">
-                    {pendingBookingsCount} New Booking Requests
+                    {actionItemsCount} Pending Action Items
                   </h3>
                   <p className="text-sm font-bold text-orange-900/60">
-                    Passengers are waiting for your confirmation to join your rides.
+                    Ride start, ride end, or payout approvals need your attention.
                   </p>
                 </div>
                 <Button variant="outline" className="ml-auto w-full md:w-auto border-orange-500/30 text-orange-600 font-black uppercase tracking-widest text-xs h-14 px-8 rounded-xl hover:bg-orange-500/10" asChild>
-                  <Link href="/dashboard/journeys">Manage Requests</Link>
+                  <Link href="/dashboard/payments">Review Actions</Link>
                 </Button>
               </CardContent>
             </Card>
@@ -170,7 +170,7 @@ export function DriverDashboard({
           </Card>
 
           {/* All Clear Placeholder */}
-          {pendingBookingsCount === 0 && (
+          {actionItemsCount === 0 && (
             <Card className="border-dashed border-2 border-border/60 bg-muted/5 flex flex-col items-center justify-center p-12 text-center gap-4 rounded-[2.5rem]">
               <TrendingUp className="w-12 h-12 text-green-500/20" />
               <p className="text-[11px] font-black text-muted-foreground/60 uppercase tracking-[0.2em]">All Requests Cleared</p>

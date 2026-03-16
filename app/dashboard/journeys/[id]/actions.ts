@@ -1,30 +1,34 @@
 "use server"
 
+import { and, eq, notInArray } from "drizzle-orm";
+import { redirect } from "next/navigation";
+
 import { db } from "@/db";
 import { bookings, journeys, payments, users } from "@/db/schema";
-import { and, eq, sql } from "drizzle-orm";
-import { redirect } from "next/navigation";
-import { HubMail } from "hubmail";
 import { requireRole } from "@/lib/auth/roles";
-
-const hubmail = new HubMail({ apiKey: process.env.HUBMAIL_KEY });
+import { createMpesaCharge, normalizeMpesaPhoneNumber } from "@/lib/payments/flutterwave";
 
 export async function bookJourneyAction(formData: FormData) {
-  const { userId, email } = await requireRole("passenger");
+  const { userId, email, name } = await requireRole("passenger");
 
   const journeyId = formData.get("journeyId") as string;
   const seatsBooked = parseInt(formData.get("seatsBooked") as string, 10);
   const luggageSpace = parseInt(formData.get("luggageSpace") as string, 10);
+  const paymentPhone = formData.get("paymentPhone") as string;
 
   if (
     !journeyId ||
+    !email ||
     Number.isNaN(seatsBooked) ||
     Number.isNaN(luggageSpace) ||
     seatsBooked < 1 ||
-    luggageSpace < 0
+    luggageSpace < 0 ||
+    !paymentPhone
   ) {
     redirect("/dashboard/journeys");
   }
+
+  const normalizedPhone = normalizeMpesaPhoneNumber(paymentPhone);
 
   const [journey] = await db
     .select({
@@ -54,71 +58,93 @@ export async function bookJourneyAction(formData: FormData) {
   const [existingBooking] = await db
     .select({ id: bookings.id })
     .from(bookings)
-    .where(and(eq(bookings.clientId, userId), eq(bookings.journeyId, journeyId)))
+    .where(
+      and(
+        eq(bookings.clientId, userId),
+        eq(bookings.journeyId, journeyId),
+        notInArray(bookings.status, ["cancelled", "payment_failed"]),
+      ),
+    )
     .limit(1);
 
   if (existingBooking) {
     redirect("/dashboard/bookings");
   }
 
+  const bookingCode = crypto.randomUUID().replace(/-/g, "").slice(0, 6).toUpperCase();
+  const txRef = `uaway-${journey.id.slice(0, 8)}-${crypto.randomUUID().slice(0, 8)}`;
   const totalAmount = journey.pricePerSeat * seatsBooked;
 
-  // Generate a random 6-character alphanumeric booking code
-  const bookingCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+  await db
+    .update(users)
+    .set({ phone: paymentPhone })
+    .where(eq(users.id, userId));
 
-  // Create booking
-  const [newBooking] = await db.insert(bookings).values({
-    clientId: userId,
-    journeyId: journeyId,
-    seatsBooked,
-    luggageSpace,
-    bookingCode,
-    status: "confirmed", // Mocking payment success here
-  }).returning({ id: bookings.id });
+  const [newBooking] = await db
+    .insert(bookings)
+    .values({
+      clientId: userId,
+      journeyId,
+      seatsBooked,
+      luggageSpace,
+      bookingCode,
+      status: "payment_pending",
+    })
+    .returning({ id: bookings.id });
 
-  // Create simulated payment
-  await db.insert(payments).values({
-    bookingId: newBooking.id,
-    amount: totalAmount,
-    status: "success",
-    reference: `MPESA-${Math.random().toString(36).substring(2, 10).toUpperCase()}`
-  });
-
-  // Decrease available seats and luggage on journey
-  await db.update(journeys).set({
-    seatsAvailable: sql`${journeys.seatsAvailable} - ${seatsBooked}`,
-    luggageCapacity: sql`${journeys.luggageCapacity} - ${luggageSpace}`
-  }).where(eq(journeys.id, journeyId));
+  const [newPayment] = await db
+    .insert(payments)
+    .values({
+      bookingId: newBooking.id,
+      amount: totalAmount,
+      currency: "KES",
+      provider: "flutterwave",
+      paymentMethod: "mpesa",
+      phoneNumber: normalizedPhone,
+      txRef,
+      status: "pending",
+      providerStatus: "pending",
+    })
+    .returning({ id: payments.id });
 
   try {
-    const [journeyDetails] = await db.select({
-      driverEmail: users.email,
-      origin: journeys.origin,
-      destination: journeys.destination
-    }).from(journeys).innerJoin(users, eq(journeys.driverId, users.id)).where(eq(journeys.id, journeyId));
+    const charge = await createMpesaCharge({
+      amount: totalAmount,
+      email,
+      fullname: name || email,
+      phoneNumber: normalizedPhone,
+      txRef,
+      meta: {
+        bookingId: newBooking.id,
+        paymentId: newPayment.id,
+        journeyId: journey.id,
+      },
+    });
 
-    if (email) {
-      await hubmail.send({
-        from: "notifications@uaway.app",
-        to: [email],
-        subject: "Booking Confirmed - UAWAY",
-        text: `Your booking for ${journeyDetails.origin} to ${journeyDetails.destination} is confirmed. Your booking code is ${bookingCode}. Please provide this to the driver when the ride ends.`,
-        html: `<b>Booking Confirmed</b><p>Route: ${journeyDetails.origin} to ${journeyDetails.destination}</p><p>Booking Code: <b>${bookingCode}</b></p>`,
-      });
-    }
+    await db
+      .update(payments)
+      .set({
+        providerTransactionId: String(charge.id),
+        providerStatus: charge.status,
+        reference: charge.flw_ref,
+      })
+      .where(eq(payments.id, newPayment.id));
+  } catch {
+    await db
+      .update(bookings)
+      .set({ status: "payment_failed" })
+      .where(eq(bookings.id, newBooking.id));
 
-    if (journeyDetails.driverEmail) {
-       await hubmail.send({
-        from: "notifications@uaway.app",
-        to: [journeyDetails.driverEmail],
-        subject: "New Booking for Your Journey - UAWAY",
-        text: `Someone just booked ${seatsBooked} seats on your journey from ${journeyDetails.origin} to ${journeyDetails.destination}.`,
-        html: `<b>New Booking</b><p>You have a new passenger for your journey from ${journeyDetails.origin} to ${journeyDetails.destination}. Seats booked: ${seatsBooked}</p>`,
-      });
-    }
-  } catch(error) {
-    console.error("HubMail Error: ", error);
+    await db
+      .update(payments)
+      .set({
+        status: "failed",
+        providerStatus: "initiation_failed",
+      })
+      .where(eq(payments.id, newPayment.id));
+
+    redirect(`/dashboard/journeys/${journeyId}?error=payment_failed`);
   }
 
-  redirect("/dashboard/bookings");
+  redirect("/dashboard/bookings?notice=payment_pending");
 }

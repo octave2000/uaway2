@@ -1,19 +1,51 @@
-import { db } from "@/db";
-import { bookings, journeys, users, cars, payments, reviews } from "@/db/schema";
-import { desc, eq } from "drizzle-orm";
-import { Card, CardTitle, CardDescription } from "@/components/ui/card";
+import { and, desc, eq, inArray } from "drizzle-orm";
+import { Calendar, Clock3, QrCode, ShieldCheck, Star, Wallet } from "lucide-react";
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
-import { Calendar, QrCode, Star } from "lucide-react";
 import { format } from "date-fns";
-import { Button } from "@/components/ui/button";
-import { submitReviewAction } from "./actions";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { requireRole } from "@/lib/auth/roles";
 
-export default async function BookingsPage() {
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardDescription, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { db } from "@/db";
+import { bookings, cars, journeys, payments, payoutRequests, reviews, users } from "@/db/schema";
+import { requireRole } from "@/lib/auth/roles";
+import { autoCompleteExpiredJourneys } from "@/lib/journeys/lifecycle";
+
+import {
+  approveAdvancePayoutAction,
+  checkPaymentStatusAction,
+  confirmRideEndAction,
+  rejectAdvancePayoutAction,
+  requestRideStartAction,
+  submitReviewAction,
+} from "./actions";
+
+type BookingsPageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+
+function getBookingTone(label: string) {
+  switch (label) {
+    case "payment pending":
+      return "border-amber-500/20 bg-amber-500/10 text-amber-600";
+    case "payment failed":
+      return "border-rose-500/20 bg-rose-500/10 text-rose-600";
+    case "ride ongoing":
+      return "border-primary/20 bg-primary/10 text-primary";
+    case "ride completed":
+      return "border-emerald-500/20 bg-emerald-500/10 text-emerald-600";
+    default:
+      return "border-border/60 bg-muted/20 text-foreground";
+  }
+}
+
+export default async function BookingsPage({ searchParams }: BookingsPageProps) {
+  const params = await searchParams;
   const { userId } = await requireRole("passenger");
+
+  await autoCompleteExpiredJourneys();
 
   const userBookings = await db
     .select({
@@ -31,117 +63,279 @@ export default async function BookingsPage() {
     .where(eq(bookings.clientId, userId))
     .orderBy(desc(bookings.createdAt));
 
-  // Get reviews for these bookings
   const userReviews = await db
     .select()
     .from(reviews)
     .where(eq(reviews.clientId, userId));
 
-  const reviewedJourneyIds = new Set(userReviews.map((r) => r.journeyId));
+  const reviewedJourneyIds = new Set(userReviews.map((review) => review.journeyId));
+  const bookingIds = userBookings.map((item) => item.booking.id);
+
+  const advanceRequests = bookingIds.length
+    ? await db
+        .select()
+        .from(payoutRequests)
+        .where(and(eq(payoutRequests.clientId, userId), eq(payoutRequests.type, "advance"), inArray(payoutRequests.bookingId, bookingIds)))
+        .orderBy(desc(payoutRequests.createdAt))
+    : [];
+
+  const latestAdvanceRequestByBookingId = new Map(
+    advanceRequests.map((request) => [request.bookingId, request]),
+  );
+
+  const notice = typeof params.notice === "string" ? params.notice : null;
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-8 w-full max-w-5xl mx-auto mb-20 md:mb-0">
-      <div className="flex flex-col gap-1.5">
-        <h1 className="text-3xl font-black tracking-tight text-foreground">My Bookings</h1>
-        <p className="text-muted-foreground text-sm font-medium">View and manage your upcoming and past rides.</p>
+    <div className="mx-auto mb-20 flex w-full max-w-5xl flex-col gap-6 px-4 py-6 md:mb-0 md:gap-8 md:px-8 md:py-8">
+      <div className="space-y-2">
+        <p className="text-[11px] font-black uppercase tracking-[0.28em] text-primary">
+          Passenger Control Center
+        </p>
+        <h1 className="text-3xl font-black tracking-tight text-foreground md:text-5xl">
+          Manage payments, ride actions, and reviews.
+        </h1>
+        <p className="max-w-2xl text-sm font-medium text-muted-foreground md:text-base">
+          This page now handles the full passenger flow: payment verification, start requests, end confirmation, and advance payout approvals.
+        </p>
       </div>
 
+      {notice === "payment_pending" ? (
+        <Card className="rounded-[2rem] border border-amber-500/20 bg-amber-500/10 p-6">
+          <div className="flex items-start gap-3 text-amber-700 dark:text-amber-400">
+            <Clock3 className="mt-0.5 h-5 w-5 shrink-0" />
+            <div className="space-y-1">
+              <div className="font-black uppercase tracking-[0.18em] text-xs">Payment initiated</div>
+              <div className="text-sm font-medium">
+                Your M-Pesa charge was created. Use the booking card below to check payment status after authorizing it on your phone.
+              </div>
+            </div>
+          </div>
+        </Card>
+      ) : null}
+
       {userBookings.length === 0 ? (
-        <Card className="flex flex-col items-center justify-center p-12 text-center border-dashed bg-muted/30 mt-8 rounded-2xl">
-           <Calendar className="w-12 h-12 text-muted-foreground/20 mb-4" />
-           <CardTitle className="mb-2">No bookings yet</CardTitle>
-           <CardDescription>You haven&apos;t booked any journeys. Discover rides on the home page.</CardDescription>
-           <Button asChild className="mt-4" variant="secondary"><Link href="/dashboard/journeys">Explore Rides</Link></Button>
+        <Card className="mt-4 flex flex-col items-center justify-center rounded-[2rem] border-dashed bg-muted/20 p-12 text-center">
+          <CardTitle className="mb-3 text-2xl font-black">No bookings yet</CardTitle>
+          <CardDescription className="mb-6 max-w-md text-sm font-medium">
+            Browse rides and your confirmed trips, payment statuses, and ride controls will appear here.
+          </CardDescription>
+          <Button asChild className="rounded-2xl px-8 text-sm font-black uppercase tracking-[0.18em]">
+            <Link href="/dashboard/journeys">Explore rides</Link>
+          </Button>
         </Card>
       ) : (
         <div className="flex flex-col gap-6">
           {userBookings.map((data) => {
-            const isCompleted = data.journey.status === 'completed';
+            const latestAdvanceRequest = latestAdvanceRequestByBookingId.get(data.booking.id);
             const isReviewed = reviewedJourneyIds.has(data.journey.id);
+            const isCompleted = data.journey.status === "completed";
+
+            const lifecycleLabel =
+              data.booking.status === "payment_pending"
+                ? "payment pending"
+                : data.booking.status === "payment_failed"
+                  ? "payment failed"
+                  : isCompleted
+                    ? "ride completed"
+                    : data.journey.status === "ongoing"
+                      ? "ride ongoing"
+                      : "confirmed";
 
             return (
-              <Card key={data.booking.id} className="overflow-hidden flex flex-col shadow-md border-border/50 bg-background/60 backdrop-blur-md rounded-2xl">
-                 <div className="flex flex-col md:flex-row">
-                    <div className="bg-primary/5 p-8 md:w-1/3 flex flex-col justify-center items-center text-center border-b md:border-b-0 md:border-r gap-3 relative overflow-hidden shrink-0">
-                        <div className="absolute -left-10 -bottom-10 w-32 h-32 bg-primary/10 rounded-full blur-3xl opacity-50" />
-                        <QrCode className="w-16 h-16 text-primary mb-2" />
-                        <div className="space-y-1 z-10">
-                          <div className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Booking Code</div>
-                          <div className="text-4xl font-black font-mono tracking-widest text-primary">{data.booking.bookingCode}</div>
-                          <div className="text-[10px] font-bold text-muted-foreground/60 mt-3 uppercase tracking-wider">Provide code to driver at end</div>
-                        </div>
+              <Card
+                key={data.booking.id}
+                className="overflow-hidden rounded-[2rem] border border-border/60 bg-card/90 shadow-sm"
+              >
+                <div className="flex flex-col md:flex-row">
+                  <div className="relative flex shrink-0 flex-col items-center justify-center gap-3 border-b bg-primary/5 p-8 text-center md:w-1/3 md:border-b-0 md:border-r">
+                    <div className="absolute -bottom-10 -left-10 h-32 w-32 rounded-full bg-primary/10 blur-3xl" />
+                    <QrCode className="h-16 w-16 text-primary" />
+                    <div className="space-y-1">
+                      <div className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
+                        Booking code
+                      </div>
+                      <div className="font-mono text-4xl font-black tracking-widest text-primary">
+                        {data.booking.bookingCode}
+                      </div>
                     </div>
-                    <div className="p-8 md:w-2/3 flex flex-col gap-6">
-                        <div className="flex justify-between items-start">
-                          <div className="font-black text-xl flex items-center gap-3">
-                              {data.journey.origin} <div className="w-4 h-0.5 bg-primary/30" /> {data.journey.destination}
-                          </div>
-                          <Badge variant={isCompleted ? "secondary" : "default"} className="uppercase font-black text-[10px] py-1 px-3 rounded-full">
-                            {isCompleted ? "Completed" : data.booking.status}
-                          </Badge>
-                        </div>
-                        <div className="flex items-center gap-2 text-muted-foreground text-xs font-bold uppercase tracking-wider">
-                          <Calendar className="w-4 h-4 text-primary" />
-                          {format(new Date(data.journey.departureTime), "PPPP 'at' p")}
-                        </div>
-                        
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-6 border-t border-border/40 mt-2">
-                          <div className="flex flex-col gap-1.5">
-                              <span className="text-[9px] text-muted-foreground uppercase font-black tracking-widest">Driver</span>
-                              <span className="text-sm font-extrabold">{data.driver.name}</span>
-                          </div>
-                          <div className="flex flex-col gap-1.5">
-                              <span className="text-[9px] text-muted-foreground uppercase font-black tracking-widest">Contact</span>
-                              <span className="text-sm font-extrabold">{data.driver.phone || "N/A"}</span>
-                          </div>
-                          <div className="flex flex-col gap-1.5">
-                              <span className="text-[9px] text-muted-foreground uppercase font-black tracking-widest">Vehicle</span>
-                              <span className="text-sm font-extrabold truncate" title={`${data.car.name} (${data.car.plateNumber})`}>
-                                {data.car.name}
-                              </span>
-                          </div>
-                          <div className="flex flex-col gap-1.5">
-                              <span className="text-[9px] text-muted-foreground uppercase font-black tracking-widest">Paid</span>
-                              <span className="text-sm font-black text-green-600">{data.payment.amount} <span className="text-[10px]">KES</span></span>
-                          </div>
-                        </div>
+                  </div>
 
-                        {isCompleted && !isReviewed && (
-                          <div className="mt-4 p-6 bg-secondary/5 rounded-2xl border border-secondary/20 flex flex-col gap-4">
-                             <div className="flex items-center gap-2 text-secondary font-black text-sm uppercase tracking-widest">
-                               <Star className="w-4 h-4 fill-secondary" /> Rate your experience
-                             </div>
-                             <form action={submitReviewAction} className="flex flex-col gap-4">
-                               <input type="hidden" name="journeyId" value={data.journey.id} />
-                               <input type="hidden" name="driverId" value={data.driver.id} />
-                               <div className="flex flex-col gap-2">
-                                  <Label className="text-xs font-bold text-muted-foreground">Rating (1-5)</Label>
-                                  <div className="flex items-center gap-3">
-                                     {[1, 2, 3, 4, 5].map((val) => (
-                                        <label key={val} className="cursor-pointer group">
-                                           <input type="radio" name="rating" value={val} required className="sr-only peer" />
-                                           <Star className="w-8 h-8 text-muted-foreground/30 peer-checked:text-yellow-500 peer-checked:fill-yellow-500 group-hover:scale-110 transition-all" />
-                                        </label>
-                                     ))}
-                                  </div>
-                               </div>
-                               <div className="flex flex-col gap-2">
-                                 <Label className="text-xs font-bold text-muted-foreground">Comments (Optional)</Label>
-                                 <Input name="comment" placeholder="Tell us about the driver or vehicle..." className="bg-background/50 border-border/40" />
-                               </div>
-                               <Button type="submit" variant="secondary" className="w-full font-black uppercase text-xs tracking-widest py-6">Submit Review</Button>
-                             </form>
-                          </div>
-                        )}
-
-                        {isReviewed && (
-                          <div className="mt-4 p-4 bg-green-500/5 rounded-xl border border-green-500/20 flex items-center justify-center gap-3 text-green-600">
-                             <Badge className="bg-green-500/20 text-green-600 border-green-500/30 hover:bg-green-500/30 font-black">Reviewed</Badge>
-                             <span className="text-xs font-bold italic opacity-70">Thank you for your feedback!</span>
-                          </div>
-                        )}
+                  <div className="flex flex-1 flex-col gap-6 p-8">
+                    <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                      <div className="space-y-2">
+                        <div className="text-2xl font-black text-foreground">
+                          {data.journey.origin} to {data.journey.destination}
+                        </div>
+                        <div className="flex flex-wrap items-center gap-4 text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                          <span className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4 text-primary" />
+                            {format(new Date(data.journey.departureTime), "PPP 'at' p")}
+                          </span>
+                          <span>Driver: {data.driver.name}</span>
+                        </div>
+                      </div>
+                      <Badge className={getBookingTone(lifecycleLabel)}>{lifecycleLabel}</Badge>
                     </div>
-                 </div>
+
+                    <div className="grid gap-4 md:grid-cols-4">
+                      <div>
+                        <div className="text-[9px] font-black uppercase tracking-[0.18em] text-muted-foreground">
+                          Contact
+                        </div>
+                        <div className="text-sm font-bold text-foreground">{data.driver.phone || "N/A"}</div>
+                      </div>
+                      <div>
+                        <div className="text-[9px] font-black uppercase tracking-[0.18em] text-muted-foreground">
+                          Vehicle
+                        </div>
+                        <div className="text-sm font-bold text-foreground">{data.car.name}</div>
+                      </div>
+                      <div>
+                        <div className="text-[9px] font-black uppercase tracking-[0.18em] text-muted-foreground">
+                          Payment
+                        </div>
+                        <div className="text-sm font-bold text-foreground">{data.payment.amount} KES</div>
+                      </div>
+                      <div>
+                        <div className="text-[9px] font-black uppercase tracking-[0.18em] text-muted-foreground">
+                          Provider status
+                        </div>
+                        <div className="text-sm font-bold text-foreground">
+                          {data.payment.providerStatus || data.payment.status}
+                        </div>
+                      </div>
+                    </div>
+
+                    {data.booking.status === "payment_pending" ? (
+                      <div className="rounded-[1.5rem] border border-amber-500/20 bg-amber-500/10 p-5">
+                        <div className="mb-4 flex items-center gap-2 text-sm font-black uppercase tracking-[0.18em] text-amber-700 dark:text-amber-400">
+                          <Clock3 className="h-4 w-4" />
+                          Waiting for M-Pesa confirmation
+                        </div>
+                        <form action={checkPaymentStatusAction}>
+                          <input type="hidden" name="bookingId" value={data.booking.id} />
+                          <Button type="submit" className="rounded-2xl font-black uppercase tracking-[0.18em]">
+                            Check payment status
+                          </Button>
+                        </form>
+                      </div>
+                    ) : null}
+
+                    {data.booking.status === "payment_failed" ? (
+                      <div className="rounded-[1.5rem] border border-rose-500/20 bg-rose-500/10 p-5 text-sm font-medium text-rose-700 dark:text-rose-400">
+                        Your payment did not confirm. You can return to the journeys page and create a fresh booking when ready.
+                      </div>
+                    ) : null}
+
+                    {data.booking.status === "confirmed" &&
+                    data.journey.status === "active" &&
+                    !data.journey.startRequestedAt ? (
+                      <div className="rounded-[1.5rem] border border-primary/20 bg-primary/5 p-5">
+                        <div className="mb-4 flex items-center gap-2 text-sm font-black uppercase tracking-[0.18em] text-primary">
+                          <ShieldCheck className="h-4 w-4" />
+                          Ready to begin?
+                        </div>
+                        <form action={requestRideStartAction}>
+                          <input type="hidden" name="bookingId" value={data.booking.id} />
+                          <Button type="submit" className="rounded-2xl font-black uppercase tracking-[0.18em]">
+                            Request ride start
+                          </Button>
+                        </form>
+                      </div>
+                    ) : null}
+
+                    {data.booking.status === "confirmed" &&
+                    data.journey.status === "active" &&
+                    data.journey.startRequestedAt ? (
+                      <div className="rounded-[1.5rem] border border-primary/20 bg-primary/5 p-5 text-sm font-medium text-primary">
+                        Start request recorded. Waiting for the driver to confirm and move the trip to ongoing.
+                      </div>
+                    ) : null}
+
+                    {data.booking.status === "confirmed" &&
+                    data.journey.status === "ongoing" &&
+                    !data.journey.endRequestedAt ? (
+                      <div className="rounded-[1.5rem] border border-primary/20 bg-primary/5 p-5 text-sm font-medium text-primary">
+                        Ride is ongoing. The driver will request trip completion when you arrive.
+                      </div>
+                    ) : null}
+
+                    {data.booking.status === "confirmed" &&
+                    data.journey.status === "ongoing" &&
+                    data.journey.endRequestedAt ? (
+                      <div className="rounded-[1.5rem] border border-amber-500/20 bg-amber-500/10 p-5">
+                        <div className="mb-4 text-sm font-black uppercase tracking-[0.18em] text-amber-700 dark:text-amber-400">
+                          Driver requested trip completion
+                        </div>
+                        <form action={confirmRideEndAction}>
+                          <input type="hidden" name="bookingId" value={data.booking.id} />
+                          <Button type="submit" className="rounded-2xl font-black uppercase tracking-[0.18em]">
+                            Confirm ride end
+                          </Button>
+                        </form>
+                      </div>
+                    ) : null}
+
+                    {latestAdvanceRequest ? (
+                      <div className="rounded-[1.5rem] border border-secondary/20 bg-secondary/5 p-5">
+                        <div className="mb-4 flex items-center gap-2 text-sm font-black uppercase tracking-[0.18em] text-secondary">
+                          <Wallet className="h-4 w-4" />
+                          Advance payout request
+                        </div>
+                        <div className="mb-4 text-sm font-medium text-muted-foreground">
+                          Status: <span className="font-black text-foreground">{latestAdvanceRequest.status}</span>
+                        </div>
+                        {latestAdvanceRequest.status === "pending" ? (
+                          <div className="flex flex-col gap-3 md:flex-row">
+                            <form action={approveAdvancePayoutAction} className="flex-1">
+                              <input type="hidden" name="payoutRequestId" value={latestAdvanceRequest.id} />
+                              <Button type="submit" className="w-full rounded-2xl font-black uppercase tracking-[0.18em]">
+                                Approve request
+                              </Button>
+                            </form>
+                            <form action={rejectAdvancePayoutAction} className="flex-1">
+                              <input type="hidden" name="payoutRequestId" value={latestAdvanceRequest.id} />
+                              <Button type="submit" variant="outline" className="w-full rounded-2xl font-black uppercase tracking-[0.18em]">
+                                Reject request
+                              </Button>
+                            </form>
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : null}
+
+                    {isCompleted && !isReviewed ? (
+                      <div className="rounded-[1.5rem] border border-secondary/20 bg-secondary/5 p-5">
+                        <div className="mb-4 flex items-center gap-2 text-sm font-black uppercase tracking-[0.18em] text-secondary">
+                          <Star className="h-4 w-4 fill-secondary" />
+                          Rate your experience
+                        </div>
+                        <form action={submitReviewAction} className="flex flex-col gap-4">
+                          <input type="hidden" name="journeyId" value={data.journey.id} />
+                          <input type="hidden" name="driverId" value={data.driver.id} />
+                          <div className="space-y-2">
+                            <Label className="text-xs font-bold text-muted-foreground">Rating (1-5)</Label>
+                            <div className="flex items-center gap-3">
+                              {[1, 2, 3, 4, 5].map((value) => (
+                                <label key={value} className="cursor-pointer group">
+                                  <input type="radio" name="rating" value={value} required className="sr-only peer" />
+                                  <Star className="h-8 w-8 text-muted-foreground/30 transition-all group-hover:scale-110 peer-checked:fill-yellow-500 peer-checked:text-yellow-500" />
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-xs font-bold text-muted-foreground">Comment</Label>
+                            <Input name="comment" placeholder="Tell us about the trip..." className="rounded-2xl" />
+                          </div>
+                          <Button type="submit" className="rounded-2xl font-black uppercase tracking-[0.18em]">
+                            Submit review
+                          </Button>
+                        </form>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
               </Card>
             );
           })}

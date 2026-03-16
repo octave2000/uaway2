@@ -1,31 +1,40 @@
-import { db } from "@/db";
-import { journeys, users, bookings, payments } from "@/db/schema";
-import { eq, desc } from "drizzle-orm";
-import { redirect } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Users, QrCode, CheckCircle2 } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { and, desc, eq, inArray } from "drizzle-orm";
+import { ArrowLeft, CheckCircle2, Clock3, QrCode, ShieldCheck, Users, Wallet } from "lucide-react";
 import Link from "next/link";
-import { endJourneyAction } from "./actions";
+import { redirect } from "next/navigation";
+
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { db } from "@/db";
+import { bookings, journeys, payments, payoutRequests, users } from "@/db/schema";
 import { requireRole } from "@/lib/auth/roles";
+import { autoCompleteExpiredJourneys } from "@/lib/journeys/lifecycle";
+
+import { confirmRideStartAction, requestRideEndAction } from "./actions";
 
 export default async function ManageJourneyPage(props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
   const { userId } = await requireRole("driver");
 
-  const [journey] = await db.select().from(journeys).where(eq(journeys.id, params.id)).limit(1);
+  await autoCompleteExpiredJourneys();
+
+  const [journey] = await db
+    .select()
+    .from(journeys)
+    .where(eq(journeys.id, params.id))
+    .limit(1);
 
   if (!journey || journey.driverId !== userId) {
-     redirect("/dashboard/journeys");
+    redirect("/dashboard/journeys");
   }
 
   const journeyBookings = await db
     .select({
       booking: bookings,
-      client: { name: users.name, phone: users.phone, image: users.image },
-      payment: payments
+      client: { name: users.name, phone: users.phone, image: users.image, id: users.id },
+      payment: payments,
     })
     .from(bookings)
     .innerJoin(users, eq(bookings.clientId, users.id))
@@ -33,94 +42,207 @@ export default async function ManageJourneyPage(props: { params: Promise<{ id: s
     .where(eq(bookings.journeyId, params.id))
     .orderBy(desc(bookings.createdAt));
 
-  const totalEarned = journeyBookings.reduce((acc, curr) => acc + curr.payment.amount, 0);
+  const bookingIds = journeyBookings.map((bookingRecord) => bookingRecord.booking.id);
+  const advanceRequests = bookingIds.length
+    ? await db
+        .select()
+        .from(payoutRequests)
+        .where(
+          and(
+            eq(payoutRequests.driverId, userId),
+            eq(payoutRequests.type, "advance"),
+            inArray(payoutRequests.bookingId, bookingIds),
+          ),
+        )
+    : [];
+
+  const totalEarned = journeyBookings.reduce((acc, current) => acc + current.payment.amount, 0);
+  const startRequester = journeyBookings.find(
+    (bookingRecord) => bookingRecord.client.id === journey.startRequestedByClientId,
+  );
+  const pendingAdvanceApprovals = advanceRequests.filter(
+    (request) => request.type === "advance" && request.status === "pending",
+  ).length;
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-8 w-full max-w-4xl mx-auto mb-20 md:mb-0">
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-6 md:gap-8 md:px-8 md:py-8">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild>
           <Link href="/dashboard/journeys">
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="h-5 w-5" />
           </Link>
         </Button>
-        <div className="flex flex-col gap-1.5">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Manage Journey</h1>
-          <p className="text-muted-foreground text-sm">{journey.origin} to {journey.destination}</p>
+        <div className="space-y-1">
+          <h1 className="text-3xl font-black tracking-tight text-foreground">Manage Journey</h1>
+          <p className="text-sm font-medium text-muted-foreground">
+            {journey.origin} to {journey.destination}
+          </p>
         </div>
-        <Badge className="ml-auto uppercase" variant={journey.status === 'active' ? 'default' : 'secondary'}>
-           {journey.status}
-        </Badge>
+        <Badge className="ml-auto uppercase">{journey.status}</Badge>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-         <Card className="md:col-span-2">
-           <CardHeader>
-             <CardTitle className="flex items-center gap-2">
-               <Users className="w-5 h-5" /> Passengers
-             </CardTitle>
-             <CardDescription>People who have booked this ride.</CardDescription>
-           </CardHeader>
-           <CardContent>
-             {journeyBookings.length === 0 ? (
-               <div className="text-center p-8 bg-muted/20 border rounded-lg text-muted-foreground">
-                 No bookings yet.
-               </div>
-             ) : (
-               <div className="flex flex-col gap-4">
-                 {journeyBookings.map((b) => (
-                   <div key={b.booking.id} className="flex items-center justify-between p-4 border rounded-lg bg-card hover:bg-muted/10 transition-colors">
-                     <div className="flex items-center gap-3">
-                        <Avatar className="w-10 h-10 border shrink-0">
-                          <AvatarImage src={b.client.image || undefined} />
-                          <AvatarFallback className="text-sm bg-muted">{b.client.name?.charAt(0) || "U"}</AvatarFallback>
-                        </Avatar>
-                        <div className="flex flex-col">
-                           <span className="font-semibold">{b.client.name}</span>
-                           <span className="text-xs text-muted-foreground">{b.client.phone || "No phone provided"} • {b.booking.seatsBooked} Seat(s)</span>
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card className="rounded-[2rem] border-border/60 bg-card/90 shadow-sm">
+          <CardContent className="p-6">
+            <div className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
+              <Users className="h-4 w-4 text-primary" />
+              Passengers
+            </div>
+            <div className="text-4xl font-black text-foreground">{journeyBookings.length}</div>
+          </CardContent>
+        </Card>
+        <Card className="rounded-[2rem] border-border/60 bg-card/90 shadow-sm">
+          <CardContent className="p-6">
+            <div className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
+              <Wallet className="h-4 w-4 text-primary" />
+              Collected
+            </div>
+            <div className="text-4xl font-black text-foreground">{totalEarned} KES</div>
+          </CardContent>
+        </Card>
+        <Card className="rounded-[2rem] border-border/60 bg-card/90 shadow-sm">
+          <CardContent className="p-6">
+            <div className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
+              <Clock3 className="h-4 w-4 text-primary" />
+              Pending approvals
+            </div>
+            <div className="text-4xl font-black text-foreground">{pendingAdvanceApprovals}</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-[1.3fr_0.7fr]">
+        <Card className="rounded-[2rem] border-border/60 bg-card/90 shadow-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-2xl font-black">
+              <Users className="h-5 w-5" />
+              Passenger list
+            </CardTitle>
+            <CardDescription className="font-medium">
+              Monitor confirmed riders, booking codes, and payment amounts for this trip.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {journeyBookings.length === 0 ? (
+              <div className="rounded-[1.5rem] border border-dashed border-border/60 bg-muted/10 p-8 text-center text-sm font-medium text-muted-foreground">
+                No passenger bookings yet.
+              </div>
+            ) : (
+              <div className="flex flex-col gap-4">
+                {journeyBookings.map((bookingRecord) => (
+                  <div
+                    key={bookingRecord.booking.id}
+                    className="flex flex-col gap-4 rounded-[1.5rem] border border-border/50 bg-background/70 p-4 md:flex-row md:items-center md:justify-between"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-11 w-11 border">
+                        <AvatarImage src={bookingRecord.client.image || undefined} />
+                        <AvatarFallback className="bg-muted text-sm font-black">
+                          {bookingRecord.client.name?.charAt(0) || "U"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="space-y-1">
+                        <div className="font-bold text-foreground">{bookingRecord.client.name}</div>
+                        <div className="text-xs font-medium text-muted-foreground">
+                          {bookingRecord.client.phone || "No phone"} • {bookingRecord.booking.seatsBooked} seat(s)
                         </div>
-                     </div>
-                     <div className="flex flex-col items-end gap-1">
-                        <Badge variant="outline" className="font-mono text-primary flex items-center gap-1">
-                          <QrCode className="w-3 h-3"/> {b.booking.bookingCode}
-                        </Badge>
-                        <span className="text-xs font-bold text-green-600">+{b.payment.amount} KES</span>
-                     </div>
-                   </div>
-                 ))}
-               </div>
-             )}
-           </CardContent>
-         </Card>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-3 md:justify-end">
+                      <Badge variant="outline" className="font-mono">
+                        <QrCode className="mr-1 h-3 w-3" />
+                        {bookingRecord.booking.bookingCode}
+                      </Badge>
+                      <Badge
+                        className={
+                          bookingRecord.payment.status === "success"
+                            ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-600"
+                            : "border-amber-500/20 bg-amber-500/10 text-amber-600"
+                        }
+                      >
+                        {bookingRecord.payment.status}
+                      </Badge>
+                      <span className="text-sm font-black text-primary">
+                        +{bookingRecord.payment.amount} KES
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-         <div className="flex flex-col gap-6">
-           <Card className="bg-primary/5 border-primary/20">
-             <CardHeader className="pb-2">
-               <CardTitle className="text-sm text-primary uppercase tracking-wider">Estimated Earnings</CardTitle>
-             </CardHeader>
-             <CardContent>
-               <div className="text-4xl font-black text-primary">{totalEarned} <span className="text-lg">KES</span></div>
-               <p className="text-xs text-muted-foreground mt-2">Available for withdrawal 6 hours post-ride.</p>
-             </CardContent>
-           </Card>
+        <div className="flex flex-col gap-6">
+          <Card className="rounded-[2rem] border-border/60 bg-card/90 shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-xl font-black">Lifecycle controls</CardTitle>
+              <CardDescription className="font-medium">
+                Handle the current ride state based on passenger and driver confirmations.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {journey.status === "active" && !journey.startRequestedAt ? (
+                <div className="rounded-[1.5rem] border border-border/50 bg-muted/10 p-4 text-sm font-medium text-muted-foreground">
+                  Waiting for a passenger to request the start of the ride.
+                </div>
+              ) : null}
 
-           <Card>
-             <CardHeader>
-               <CardTitle>Actions</CardTitle>
-             </CardHeader>
-             <CardContent className="flex flex-col gap-3">
-               {journey.status === 'active' || journey.status === 'ongoing' ? (
-                 <form action={endJourneyAction}>
-                   <input type="hidden" name="journeyId" value={journey.id} />
-                   <Button type="submit" className="w-full font-bold">End Journey</Button>
-                 </form>
-               ) : (
-                 <div className="flex items-center justify-center gap-2 text-green-600 bg-green-50 dark:bg-green-900/20 p-3 rounded-md font-semibold">
-                    <CheckCircle2 className="w-5 h-5" /> Completed
-                 </div>
-               )}
-             </CardContent>
-           </Card>
-         </div>
+              {journey.status === "active" && journey.startRequestedAt ? (
+                <div className="space-y-4 rounded-[1.5rem] border border-primary/20 bg-primary/5 p-4">
+                  <div className="space-y-1">
+                    <div className="text-xs font-black uppercase tracking-[0.2em] text-primary">
+                      Start request received
+                    </div>
+                    <div className="text-sm font-bold text-foreground">
+                      {startRequester?.client.name || "A passenger"} is ready to begin the trip.
+                    </div>
+                  </div>
+                  <form action={confirmRideStartAction}>
+                    <input type="hidden" name="journeyId" value={journey.id} />
+                    <Button type="submit" className="w-full rounded-2xl font-black uppercase tracking-[0.18em]">
+                      Confirm ride start
+                    </Button>
+                  </form>
+                </div>
+              ) : null}
+
+              {journey.status === "ongoing" && !journey.endRequestedAt ? (
+                <form action={requestRideEndAction}>
+                  <input type="hidden" name="journeyId" value={journey.id} />
+                  <Button type="submit" className="w-full rounded-2xl font-black uppercase tracking-[0.18em]">
+                    Request ride end
+                  </Button>
+                </form>
+              ) : null}
+
+              {journey.status === "ongoing" && journey.endRequestedAt ? (
+                <div className="rounded-[1.5rem] border border-amber-500/20 bg-amber-500/10 p-4 text-sm font-medium text-amber-700 dark:text-amber-400">
+                  End request sent. Waiting for a passenger to confirm trip completion.
+                </div>
+              ) : null}
+
+              {journey.status === "completed" ? (
+                <div className="flex items-center gap-3 rounded-[1.5rem] border border-emerald-500/20 bg-emerald-500/10 p-4 text-emerald-600">
+                  <CheckCircle2 className="h-5 w-5" />
+                  <div className="text-sm font-bold">Journey completed and payouts can progress.</div>
+                </div>
+              ) : null}
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-[2rem] border-border/60 bg-card/90 shadow-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-xl font-black">
+                <ShieldCheck className="h-5 w-5 text-primary" />
+                Driver note
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm font-medium text-muted-foreground">
+              Confirm start only after passengers are in the vehicle. Request end when the trip is complete so passengers can close it from their booking screen.
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

@@ -89,6 +89,12 @@ export const journeys = pgTable("journeys", {
   luggageCapacity: integer("luggage_capacity").notNull(),
   pricePerSeat: integer("price_per_seat").notNull(),
   status: text("status", { enum: ["active", "ongoing", "completed", "cancelled"] }).default("active").notNull(),
+  startRequestedByClientId: text("start_requested_by_client_id").references(() => users.id, { onDelete: "set null" }),
+  startRequestedAt: timestamp("start_requested_at", { mode: "date" }),
+  startedAt: timestamp("started_at", { mode: "date" }),
+  endRequestedAt: timestamp("end_requested_at", { mode: "date" }),
+  endConfirmedByClientId: text("end_confirmed_by_client_id").references(() => users.id, { onDelete: "set null" }),
+  completedAt: timestamp("completed_at", { mode: "date" }),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -105,7 +111,11 @@ export const bookings = pgTable("bookings", {
   seatsBooked: integer("seats_booked").notNull(),
   luggageSpace: integer("luggage_space").notNull(),
   bookingCode: text("booking_code").notNull(),
-  status: text("status", { enum: ["pending", "confirmed", "cancelled"] }).default("pending").notNull(),
+  status: text("status", {
+    enum: ["payment_pending", "confirmed", "completed", "cancelled", "payment_failed"],
+  }).default("payment_pending").notNull(),
+  confirmedAt: timestamp("confirmed_at", { mode: "date" }),
+  completedAt: timestamp("completed_at", { mode: "date" }),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -118,7 +128,41 @@ export const payments = pgTable("payments", {
     .references(() => bookings.id, { onDelete: "cascade" }),
   amount: integer("amount").notNull(),
   status: text("status", { enum: ["pending", "success", "failed", "refunded"] }).default("pending").notNull(),
+  currency: text("currency").default("KES").notNull(),
+  provider: text("provider").default("flutterwave").notNull(),
+  paymentMethod: text("payment_method").default("mpesa").notNull(),
+  phoneNumber: text("phone_number"),
+  txRef: text("tx_ref"),
+  providerTransactionId: text("provider_transaction_id"),
+  providerStatus: text("provider_status"),
+  checkoutUrl: text("checkout_url"),
   reference: text("reference"),
+  paidAt: timestamp("paid_at", { mode: "date" }),
+  verifiedAt: timestamp("verified_at", { mode: "date" }),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const payoutRequests = pgTable("payout_requests", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  paymentId: text("payment_id")
+    .notNull()
+    .references(() => payments.id, { onDelete: "cascade" }),
+  bookingId: text("booking_id")
+    .notNull()
+    .references(() => bookings.id, { onDelete: "cascade" }),
+  driverId: text("driver_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  clientId: text("client_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  amount: integer("amount").notNull(),
+  type: text("type", { enum: ["standard", "advance"] }).notNull(),
+  status: text("status", { enum: ["pending", "approved", "rejected", "paid"] }).default("pending").notNull(),
+  note: text("note"),
+  respondedAt: timestamp("responded_at", { mode: "date" }),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

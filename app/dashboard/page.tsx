@@ -1,13 +1,16 @@
 import { db } from "@/db";
-import { bookings, cars, journeys, users } from "@/db/schema";
+import { bookings, cars, journeys, payoutRequests, users } from "@/db/schema";
 import { eq, desc, and, ne, count } from "drizzle-orm";
 import { OnboardingGate } from "@/components/dashboard/onboarding-gate";
 import { PassengerDashboard } from "@/components/dashboard/passenger-dashboard";
 import { DriverDashboard } from "@/components/dashboard/driver-dashboard";
 import { requireAuthenticatedUser } from "@/lib/auth/roles";
+import { autoCompleteExpiredJourneys } from "@/lib/journeys/lifecycle";
 
 export default async function DashboardHome() {
   const { userId, role, name } = await requireAuthenticatedUser();
+
+  await autoCompleteExpiredJourneys();
 
   if (!role) {
     return <OnboardingGate />;
@@ -47,22 +50,27 @@ export default async function DashboardHome() {
     );
   } else {
     // Driver Data
-    const [myActiveJourneys, pendingBookings] = await Promise.all([
+    const [myActiveJourneys, pendingPayoutRequests] = await Promise.all([
       db.select()
         .from(journeys)
         .where(and(eq(journeys.driverId, userId), ne(journeys.status, "completed")))
         .orderBy(desc(journeys.createdAt)),
       db.select({ count: count() })
-        .from(bookings)
-        .innerJoin(journeys, eq(bookings.journeyId, journeys.id))
-        .where(and(eq(journeys.driverId, userId), eq(bookings.status, "pending")))
+        .from(payoutRequests)
+        .where(and(eq(payoutRequests.driverId, userId), eq(payoutRequests.status, "pending")))
     ]);
+
+    const pendingRideActions = myActiveJourneys.filter(
+      (journey) =>
+        (journey.status === "active" && Boolean(journey.startRequestedAt)) ||
+        (journey.status === "ongoing" && Boolean(journey.endRequestedAt)),
+    ).length;
 
     return (
       <DriverDashboard 
         userName={name || "User"}
         activeJourneys={myActiveJourneys}
-        pendingBookingsCount={pendingBookings[0].count}
+        actionItemsCount={pendingRideActions + pendingPayoutRequests[0].count}
       />
     );
   }
