@@ -1,16 +1,33 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Open_Sans } from "next/font/google";
+import { ThemeProvider } from "@/components/theme-provider";
 
 const fontSans = Open_Sans({
   subsets: ["latin"],
   variable: "--font-sans",
 });
 
+export const viewport: Viewport = {
+  themeColor: "#000000",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
 
 export const metadata: Metadata = {
-  title: "Uaway Starter",
-  description: "Starter kit with Auth.js, Google OAuth, magic links, and credentials auth on Drizzle + Postgres.",
+  title: "UAWAY - Premium Ride Sharing",
+  description: "Share rides, save costs, and travel across Kenya with ease.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "UAWAY",
+  },
+  icons: {
+    apple: "/icons/icon-192x192.png",
+  },
 };
 
 export default function RootLayout({
@@ -19,9 +36,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={`${fontSans.variable} antialiased`}>
-        {children}
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );
