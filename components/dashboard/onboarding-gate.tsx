@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Car, MapPin, Check, ArrowRight, ShieldCheck, Zap, Wallet, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -20,7 +19,7 @@ export function OnboardingGate() {
       toast.success("Welcome aboard!", {
         description: `You are now set up as a ${selected}.`
       });
-    } catch (error) {
+    } catch {
       toast.error("Something went wrong. Please try again.");
     } finally {
       setIsSubmitting(false);

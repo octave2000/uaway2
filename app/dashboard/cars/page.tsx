@@ -1,19 +1,17 @@
-import { auth } from "@/auth";
 import { db } from "@/db";
 import { cars } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, AlertCircle, Plus, CarFront, Users, Briefcase } from "lucide-react";
 import Link from "next/link";
+import { requireRole } from "@/lib/auth/roles";
 
 export default async function CarsPage() {
-  const session = await auth();
-  if (!session?.user?.id) redirect("/login");
+  const { userId } = await requireRole("driver");
 
-  const userCars = await db.select().from(cars).where(eq(cars.driverId, session.user.id));
+  const userCars = await db.select().from(cars).where(eq(cars.driverId, userId));
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-8 w-full max-w-5xl mx-auto">

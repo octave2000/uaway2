@@ -1,22 +1,18 @@
 "use client";
 
 import Link from "next/link";
+import type { Session } from "next-auth";
 import { Button } from "@/components/ui/button";
 import { 
   LayoutDashboard 
 } from "lucide-react";
 import Image from "next/image";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
-export function Navbar({ session }: { session: any }) {
-  const [mounted, setMounted] = useState(false);
+export function Navbar({ session }: { session: Session | null }) {
   const [isScrolled, setIsScrolled] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -25,8 +21,6 @@ export function Navbar({ session }: { session: any }) {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
-
-  if (!mounted) return null;
 
   return (
     <nav className={cn(

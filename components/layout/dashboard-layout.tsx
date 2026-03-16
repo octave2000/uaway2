@@ -1,7 +1,13 @@
 import { Sidebar } from "./sidebar"
 import { BottomNav } from "./bottom-nav"
 
-export function DashboardLayout({ children }: { children: React.ReactNode }) {
+export function DashboardLayout({
+  children,
+  role,
+}: {
+  children: React.ReactNode;
+  role: "passenger" | "driver";
+}) {
   return (
     <div className="flex min-h-screen bg-background relative overflow-hidden">
       {/* Premium Background Effects */}
@@ -12,7 +18,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
       {/* Desktop Sidebar */}
       <div className="hidden md:flex w-64 flex-col fixed inset-y-0 z-50 border-r bg-background/80 backdrop-blur-md">
-        <Sidebar />
+        <Sidebar role={role} />
       </div>
       
       {/* Main Content Area */}
@@ -22,7 +28,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
       {/* Mobile Bottom Navigation */}
       <div className="md:hidden fixed bottom-6 left-6 right-6 z-50 h-16 bg-background/80 backdrop-blur-xl border border-white/20 shadow-2xl rounded-2xl overflow-hidden">
-        <BottomNav />
+        <BottomNav role={role} />
       </div>
     </div>
   )

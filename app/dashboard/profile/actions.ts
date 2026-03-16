@@ -24,7 +24,7 @@ export async function updateProfileAction(formData: FormData) {
   revalidatePath("/dashboard/profile");
 }
 
-export async function submitVerificationAction(formData: FormData) {
+export async function submitVerificationAction() {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
 

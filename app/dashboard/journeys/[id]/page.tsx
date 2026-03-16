@@ -1,9 +1,8 @@
-import { auth } from "@/auth";
 import { db } from "@/db";
 import { journeys, users, cars, bookings } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { redirect } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,13 +11,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
 import { format } from "date-fns";
 import { bookJourneyAction } from "./actions";
+import { requireRole } from "@/lib/auth/roles";
 
 export default async function JourneyDetailsPage(
   props: { params: Promise<{ id: string }> }
 ) {
   const params = await props.params;
-  const session = await auth();
-  if (!session?.user?.id) redirect("/login");
+  const { userId } = await requireRole("passenger");
 
   const [data] = await db
     .select({
@@ -44,14 +43,14 @@ export default async function JourneyDetailsPage(
   
   // Check if current user already booked this journey
   const existingBookings = await db.select().from(bookings).where(
-    and(eq(bookings.clientId, session.user.id), eq(bookings.journeyId, params.id))
+    and(eq(bookings.clientId, userId), eq(bookings.journeyId, params.id))
   );
   
   const alreadyBooked = existingBookings.length > 0;
   
   // Check if current user is the driver
-  if (data.driver.id === session.user.id) {
-     redirect(`/dashboard/journeys/${params.id}/manage`);
+  if (data.driver.id === userId) {
+     redirect("/dashboard/journeys");
   }
 
   return (
@@ -133,7 +132,6 @@ export default async function JourneyDetailsPage(
               ) : (
                 <form action={bookJourneyAction} className="space-y-4">
                   <input type="hidden" name="journeyId" value={data.journey.id} />
-                  <input type="hidden" name="pricePerSeat" value={data.journey.pricePerSeat} />
                   <div className="grid grid-cols-2 gap-4">
                      <div className="space-y-2">
                        <Label htmlFor="seatsBooked">Seats to Book</Label>

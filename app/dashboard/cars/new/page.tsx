@@ -1,5 +1,3 @@
-import { auth } from "@/auth";
-import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,10 +5,10 @@ import { Label } from "@/components/ui/label";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { addCarAction } from "./actions";
+import { requireRole } from "@/lib/auth/roles";
 
 export default async function NewCarPage() {
-  const session = await auth();
-  if (!session?.user?.id) redirect("/login");
+  await requireRole("driver");
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-8 w-full max-w-2xl mx-auto">

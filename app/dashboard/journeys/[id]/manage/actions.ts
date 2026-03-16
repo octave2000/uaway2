@@ -1,20 +1,23 @@
 "use server"
 
-import { auth } from "@/auth";
 import { db } from "@/db";
 import { journeys } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
+import { requireRole } from "@/lib/auth/roles";
 
 export async function endJourneyAction(formData: FormData) {
-  const session = await auth();
-  if (!session?.user?.id) throw new Error("Unauthorized");
+  const { userId } = await requireRole("driver");
 
   const journeyId = formData.get("journeyId") as string;
+
+  if (!journeyId) {
+    redirect("/dashboard/journeys");
+  }
   
   await db.update(journeys).set({
     status: "completed"
-  }).where(eq(journeys.id, journeyId));
+  }).where(and(eq(journeys.id, journeyId), eq(journeys.driverId, userId)));
 
   redirect(`/dashboard/journeys/${journeyId}/manage`);
 }

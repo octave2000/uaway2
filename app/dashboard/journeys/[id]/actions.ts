@@ -1,30 +1,74 @@
 "use server"
 
-import { auth } from "@/auth";
 import { db } from "@/db";
-import { bookings, payments, journeys, users } from "@/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { bookings, journeys, payments, users } from "@/db/schema";
+import { and, eq, sql } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { HubMail } from "hubmail";
+import { requireRole } from "@/lib/auth/roles";
 
 const hubmail = new HubMail({ apiKey: process.env.HUBMAIL_KEY });
 
 export async function bookJourneyAction(formData: FormData) {
-  const session = await auth();
-  if (!session?.user?.id) throw new Error("Unauthorized");
+  const { userId, email } = await requireRole("passenger");
 
   const journeyId = formData.get("journeyId") as string;
   const seatsBooked = parseInt(formData.get("seatsBooked") as string, 10);
   const luggageSpace = parseInt(formData.get("luggageSpace") as string, 10);
-  const pricePerSeat = parseInt(formData.get("pricePerSeat") as string, 10);
-  const totalAmount = pricePerSeat * seatsBooked;
+
+  if (
+    !journeyId ||
+    Number.isNaN(seatsBooked) ||
+    Number.isNaN(luggageSpace) ||
+    seatsBooked < 1 ||
+    luggageSpace < 0
+  ) {
+    redirect("/dashboard/journeys");
+  }
+
+  const [journey] = await db
+    .select({
+      id: journeys.id,
+      driverId: journeys.driverId,
+      status: journeys.status,
+      seatsAvailable: journeys.seatsAvailable,
+      luggageCapacity: journeys.luggageCapacity,
+      pricePerSeat: journeys.pricePerSeat,
+      origin: journeys.origin,
+      destination: journeys.destination,
+    })
+    .from(journeys)
+    .where(eq(journeys.id, journeyId))
+    .limit(1);
+
+  if (
+    !journey ||
+    journey.status !== "active" ||
+    journey.driverId === userId ||
+    seatsBooked > journey.seatsAvailable ||
+    luggageSpace > journey.luggageCapacity
+  ) {
+    redirect(`/dashboard/journeys/${journeyId}`);
+  }
+
+  const [existingBooking] = await db
+    .select({ id: bookings.id })
+    .from(bookings)
+    .where(and(eq(bookings.clientId, userId), eq(bookings.journeyId, journeyId)))
+    .limit(1);
+
+  if (existingBooking) {
+    redirect("/dashboard/bookings");
+  }
+
+  const totalAmount = journey.pricePerSeat * seatsBooked;
 
   // Generate a random 6-character alphanumeric booking code
   const bookingCode = Math.random().toString(36).substring(2, 8).toUpperCase();
 
   // Create booking
   const [newBooking] = await db.insert(bookings).values({
-    clientId: session.user.id,
+    clientId: userId,
     journeyId: journeyId,
     seatsBooked,
     luggageSpace,
@@ -53,10 +97,10 @@ export async function bookJourneyAction(formData: FormData) {
       destination: journeys.destination
     }).from(journeys).innerJoin(users, eq(journeys.driverId, users.id)).where(eq(journeys.id, journeyId));
 
-    if (session.user.email) {
+    if (email) {
       await hubmail.send({
         from: "notifications@uaway.app",
-        to: [session.user.email],
+        to: [email],
         subject: "Booking Confirmed - UAWAY",
         text: `Your booking for ${journeyDetails.origin} to ${journeyDetails.destination} is confirmed. Your booking code is ${bookingCode}. Please provide this to the driver when the ride ends.`,
         html: `<b>Booking Confirmed</b><p>Route: ${journeyDetails.origin} to ${journeyDetails.destination}</p><p>Booking Code: <b>${bookingCode}</b></p>`,

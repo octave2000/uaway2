@@ -1,36 +1,20 @@
-import { auth } from "@/auth";
 import { db } from "@/db";
-import { journeys, users, cars, bookings } from "@/db/schema";
+import { bookings, cars, journeys, users } from "@/db/schema";
 import { eq, desc, and, ne, count } from "drizzle-orm";
-import { redirect } from "next/navigation";
 import { OnboardingGate } from "@/components/dashboard/onboarding-gate";
 import { PassengerDashboard } from "@/components/dashboard/passenger-dashboard";
 import { DriverDashboard } from "@/components/dashboard/driver-dashboard";
+import { requireAuthenticatedUser } from "@/lib/auth/roles";
 
 export default async function DashboardHome() {
-  const session = await auth();
+  const { userId, role, name } = await requireAuthenticatedUser();
 
-  if (!session?.user?.id) {
-    redirect("/login");
-  }
-
-  const userId = session.user.id;
-
-  // Fetch the user's default role
-  const [userRecord] = await db
-    .select({ defaultRole: users.defaultRole })
-    .from(users)
-    .where(eq(users.id, userId))
-    .limit(1);
-
-  const defaultRole = userRecord?.defaultRole as "passenger" | "driver" | null;
-
-  if (!defaultRole) {
+  if (!role) {
     return <OnboardingGate />;
   }
 
   // Fetch role-specific data
-  if (defaultRole === "passenger") {
+  if (role === "passenger") {
     const [recentJourneys, upcomingBooking] = await Promise.all([
       db.select({
         journey: journeys,
@@ -56,7 +40,7 @@ export default async function DashboardHome() {
 
     return (
       <PassengerDashboard 
-        userName={session.user.name || "User"}
+        userName={name || "User"}
         recentJourneys={recentJourneys}
         upcomingBooking={upcomingBooking[0] || null}
       />
@@ -76,7 +60,7 @@ export default async function DashboardHome() {
 
     return (
       <DriverDashboard 
-        userName={session.user.name || "User"}
+        userName={name || "User"}
         activeJourneys={myActiveJourneys}
         pendingBookingsCount={pendingBookings[0].count}
       />

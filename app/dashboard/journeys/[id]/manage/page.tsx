@@ -1,4 +1,3 @@
-import { auth } from "@/auth";
 import { db } from "@/db";
 import { journeys, users, bookings, payments } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
@@ -10,15 +9,15 @@ import { ArrowLeft, Users, QrCode, CheckCircle2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
 import { endJourneyAction } from "./actions";
+import { requireRole } from "@/lib/auth/roles";
 
 export default async function ManageJourneyPage(props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
-  const session = await auth();
-  if (!session?.user?.id) redirect("/login");
+  const { userId } = await requireRole("driver");
 
   const [journey] = await db.select().from(journeys).where(eq(journeys.id, params.id)).limit(1);
 
-  if (!journey || journey.driverId !== session.user.id) {
+  if (!journey || journey.driverId !== userId) {
      redirect("/dashboard/journeys");
   }
 

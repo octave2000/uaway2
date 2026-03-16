@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { MapPin, Calendar, Users, Search, ArrowRight } from "lucide-react";
+import { MapPin, Calendar, Search, ArrowRight } from "lucide-react";
 
 export function JourneySearch() {
   const [origin, setOrigin] = useState("");

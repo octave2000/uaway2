@@ -1,8 +1,6 @@
-import { auth } from "@/auth";
 import { db } from "@/db";
 import { cars } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,18 +8,18 @@ import { Label } from "@/components/ui/label";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { postJourneyAction } from "./actions";
+import { requireRole } from "@/lib/auth/roles";
 
 export default async function NewJourneyPage() {
-  const session = await auth();
-  if (!session?.user?.id) redirect("/login");
+  const { userId } = await requireRole("driver");
 
-  const userCars = await db.select().from(cars).where(eq(cars.driverId, session.user.id));
+  const userCars = await db.select().from(cars).where(eq(cars.driverId, userId));
 
   if (userCars.length === 0) {
     return (
       <div className="flex flex-col gap-6 p-4 md:p-8 w-full max-w-2xl mx-auto text-center mt-12">
         <h1 className="text-2xl font-bold">No Vehicles Available</h1>
-        <p className="text-muted-foreground">You need to add a verified vehicle before posting a journey.</p>
+        <p className="text-muted-foreground">You need to add a vehicle before posting a journey.</p>
         <Button asChild className="w-fit mx-auto mt-4">
           <Link href="/dashboard/cars/new">Add a Vehicle</Link>
         </Button>

@@ -1,25 +1,16 @@
-# TODO - UAWAY
+# TODO
 
-## Phase 1: Authentication & Profile [DONE]
-- [x] Basic Auth setup
-- [x] Profile page with verification upload
-- [x] Vehicle management
+## In Progress
+- [ ] Run `eslint` and `tsc` after the role/navigation refactor
+- [ ] Fix any lint/type issues introduced by the new role helpers and journeys page
+- [ ] Commit the completed role-guard and navigation changes
 
-## Phase 2: Journey Management [DONE]
-- [x] Create Journey form
-- [x] Search Journeys with filters
-- [x] Journey details page
+## Next Priority
+- [ ] Add the missing payment management surface from the project brief
+- [ ] Add ride lifecycle controls beyond "end journey" so start/confirm flows match the documented behavior
+- [ ] Add vehicle edit / verification management instead of add-only vehicle flows
+- [ ] Add clearer notifications or status surfaces for pending bookings, payments, and ride actions
 
-## Phase 3: Booking & HubMail [DONE]
-- [x] Booking system
-- [x] HubMail notification for new bookings
-- [x] Booking confirmation page
-
-## Phase 4: Lifecycle & UI [DONE]
-- [x] Payment gateway hint (M-Pesa)
-- [x] Ride lifecycle (Ongoing -> Completed)
-- [x] Rating and Reviews system
-- [x] Premium Dashboard UI
-- [x] Background patterns & Texture
-- [x] Real-time data integration (No mock data)
-- [x] Mobile-responsive polish
+## UI Follow-Up
+- [ ] Audit remaining dashboard pages for consistent spacing, calmer color usage, and stronger mobile layout behavior
+- [ ] Review public navigation so passenger/driver intent is clearer outside the dashboard too

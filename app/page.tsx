@@ -5,7 +5,7 @@ import { journeys, users, cars } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { MapPin, Calendar, Users, Car, ArrowRight, Search, ShieldCheck, Zap, Star } from "lucide-react";
+import { MapPin, Calendar, Users, Car, ArrowRight, Search, ShieldCheck, Zap } from "lucide-react";
 import Image from "next/image";
 import { format } from "date-fns";
 import { Navbar } from "@/components/layout/navbar";

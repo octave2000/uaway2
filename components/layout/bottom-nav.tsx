@@ -1,18 +1,26 @@
 "use client"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Car, Home, Calendar, User } from "lucide-react"
+import { Car, CarFront, Calendar, Home, User } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-const navItems = [
+const passengerNavItems = [
   { href: "/dashboard", label: "Home", icon: Home, exact: true },
-  { href: "/dashboard/journeys", label: "Journeys", icon: Car, exact: false },
+  { href: "/dashboard/journeys", label: "Rides", icon: Car, exact: false },
   { href: "/dashboard/bookings", label: "Bookings", icon: Calendar, exact: false },
   { href: "/dashboard/profile", label: "Profile", icon: User, exact: false },
-]
+];
 
-export function BottomNav() {
+const driverNavItems = [
+  { href: "/dashboard", label: "Home", icon: Home, exact: true },
+  { href: "/dashboard/journeys", label: "Journeys", icon: Car, exact: false },
+  { href: "/dashboard/cars", label: "Vehicles", icon: CarFront, exact: false },
+  { href: "/dashboard/profile", label: "Profile", icon: User, exact: false },
+];
+
+export function BottomNav({ role }: { role: "passenger" | "driver" }) {
   const pathname = usePathname()
+  const navItems = role === "driver" ? driverNavItems : passengerNavItems;
 
   return (
     <nav className="flex justify-around items-center h-16 w-full px-2">

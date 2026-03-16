@@ -1,21 +1,19 @@
-import { auth } from "@/auth";
 import { db } from "@/db";
 import { bookings, journeys, users, cars, payments, reviews } from "@/db/schema";
-import { eq, desc, and } from "drizzle-orm";
-import { redirect } from "next/navigation";
-import { Card, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { desc, eq } from "drizzle-orm";
+import { Card, CardTitle, CardDescription } from "@/components/ui/card";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, MapPin, QrCode, Star, MessageSquare } from "lucide-react";
+import { Calendar, QrCode, Star } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { submitReviewAction } from "./actions";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { requireRole } from "@/lib/auth/roles";
 
 export default async function BookingsPage() {
-  const session = await auth();
-  if (!session?.user?.id) redirect("/login");
+  const { userId } = await requireRole("passenger");
 
   const userBookings = await db
     .select({
@@ -30,14 +28,14 @@ export default async function BookingsPage() {
     .innerJoin(users, eq(journeys.driverId, users.id))
     .innerJoin(cars, eq(journeys.carId, cars.id))
     .innerJoin(payments, eq(bookings.id, payments.bookingId))
-    .where(eq(bookings.clientId, session.user.id))
+    .where(eq(bookings.clientId, userId))
     .orderBy(desc(bookings.createdAt));
 
   // Get reviews for these bookings
   const userReviews = await db
     .select()
     .from(reviews)
-    .where(eq(reviews.clientId, session.user.id));
+    .where(eq(reviews.clientId, userId));
 
   const reviewedJourneyIds = new Set(userReviews.map((r) => r.journeyId));
 
