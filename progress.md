@@ -13,6 +13,7 @@
 - [x] Made dashboard navigation role-aware
 - [x] Split the journeys page into clearer passenger and driver experiences
 - [x] Added a driver-only vehicle detail page with edit and verification actions
+- [x] Added a driver-only payments overview page and wired it into navigation
 - [x] Run full verification and fix regressions for the completed changes
 - [ ] Continue on the next missing documented features after role enforcement is stable
 
