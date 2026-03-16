@@ -75,6 +75,9 @@ export default async function CarsPage() {
                       {car.luggageCapacity} Kg
                     </div>
                  </div>
+                 <Button asChild variant="outline" className="mt-4 w-full rounded-xl">
+                   <Link href={`/dashboard/cars/${car.id}`}>Manage Vehicle</Link>
+                 </Button>
               </CardContent>
             </Card>
           ))}

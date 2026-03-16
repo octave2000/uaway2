@@ -12,7 +12,8 @@
 - [x] Guarded passenger-only pages and actions for booking and reviews
 - [x] Made dashboard navigation role-aware
 - [x] Split the journeys page into clearer passenger and driver experiences
-- [ ] Run full verification and fix any regressions
+- [x] Added a driver-only vehicle detail page with edit and verification actions
+- [x] Run full verification and fix regressions for the completed changes
 - [ ] Continue on the next missing documented features after role enforcement is stable
 
 ## Notes
