@@ -1,21 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { 
-  Car, 
-  Moon, 
-  Sun, 
-  Menu, 
   LayoutDashboard 
 } from "lucide-react";
 import Image from "next/image";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
 export function Navbar({ session }: { session: any }) {
-  const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
@@ -73,18 +68,7 @@ export function Navbar({ session }: { session: any }) {
         {/* Action Buttons */}
         <div className="flex items-center gap-2 md:gap-4">
           {/* Theme Toggle */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className="rounded-full w-10 h-10 md:w-12 md:h-12 bg-muted/40 hover:bg-muted/60 transition-colors border border-border/50"
-          >
-            {theme === "dark" ? (
-              <Sun className="w-5 h-5 text-yellow-500" />
-            ) : (
-              <Moon className="w-5 h-5 text-primary" />
-            )}
-          </Button>
+          <ThemeToggle className="w-10 h-10 md:w-12 md:h-12" />
 
           {session?.user ? (
             <Link href="/dashboard">
