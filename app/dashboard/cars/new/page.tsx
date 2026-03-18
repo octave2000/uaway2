@@ -4,6 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { FileUploadField } from "@/components/uploadthing/file-upload-field";
+
 import { addCarAction } from "./actions";
 import { requireRole } from "@/lib/auth/roles";
 
@@ -51,13 +53,14 @@ export default async function NewCarPage() {
                  </div>
               </div>
             </div>
-            <div className="space-y-2 pt-2 border-t">
-              <Label>Vehicle Photo (Optional)</Label>
-              <label className="border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center text-center gap-2 cursor-pointer hover:bg-muted/50 transition-colors">
-                 <span className="text-sm font-medium text-muted-foreground">Click to upload photo</span>
-                 <input type="file" name="photo" className="hidden" accept="image/*" />
-              </label>
-            </div>
+            <FileUploadField
+              accept="image/*"
+              acceptedLabel="JPG, PNG, or WEBP up to 4MB"
+              endpoint="carPhoto"
+              helper="Upload the actual vehicle photo passengers should see on ride cards."
+              label="Vehicle Photo"
+              name="photoUrl"
+            />
             <Button type="submit" className="w-full">Register Vehicle</Button>
           </form>
         </CardContent>

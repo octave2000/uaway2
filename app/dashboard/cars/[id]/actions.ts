@@ -14,6 +14,7 @@ export async function updateCarAction(formData: FormData) {
   const carId = formData.get("carId") as string;
   const name = formData.get("name") as string;
   const plateNumber = formData.get("plateNumber") as string;
+  const photo = (formData.get("photoUrl") as string | null)?.trim() ?? "";
   const seats = parseInt(formData.get("seats") as string, 10);
   const luggageCapacity = parseInt(formData.get("luggageCapacity") as string, 10);
 
@@ -34,6 +35,7 @@ export async function updateCarAction(formData: FormData) {
     .set({
       name,
       plateNumber: plateNumber.toUpperCase(),
+      photo: photo || null,
       seats,
       luggageCapacity,
     })
@@ -46,15 +48,17 @@ export async function updateCarAction(formData: FormData) {
 export async function submitCarVerificationAction(formData: FormData) {
   const { userId } = await requireRole("driver");
   const carId = formData.get("carId") as string;
+  const documentPhoto = (formData.get("documentPhotoUrl") as string | null)?.trim() ?? "";
 
-  if (!carId) {
+  if (!carId || !documentPhoto) {
     redirect("/dashboard/cars");
   }
 
   await db
     .update(cars)
     .set({
-      verified: true,
+      documentPhoto,
+      verified: false,
     })
     .where(and(eq(cars.id, carId), eq(cars.driverId, userId)));
 

@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CarImage } from "@/components/shared/car-image";
 import { JourneySearch } from "@/components/dashboard/journey-search";
 import {
   Briefcase,
@@ -87,7 +88,7 @@ export default async function JourneysPage({ searchParams }: JourneysPageProps) 
           image: users.image,
           verified: users.verified,
         },
-        car: { name: cars.name },
+        car: { id: cars.id, name: cars.name, photo: cars.photo },
       })
       .from(journeys)
       .innerJoin(users, eq(journeys.driverId, users.id))
@@ -152,6 +153,12 @@ export default async function JourneysPage({ searchParams }: JourneysPageProps) 
                 key={data.journey.id}
                 className="group flex h-full flex-col overflow-hidden rounded-[2rem] border border-border/60 bg-card/85 shadow-sm transition-all hover:-translate-y-1 hover:shadow-xl"
               >
+                <CarImage
+                  src={data.car.photo}
+                  alt={data.car.name}
+                  className="aspect-[16/9]"
+                  sizes="(max-width: 1280px) 100vw, 33vw"
+                />
                 <CardHeader className="space-y-4 border-b border-border/40 bg-background/50 p-6">
                   <div className="flex items-start justify-between gap-4">
                     <div className="space-y-2">
@@ -223,7 +230,7 @@ export default async function JourneysPage({ searchParams }: JourneysPageProps) 
   const myJourneys = await db
     .select({
       journey: journeys,
-      car: { name: cars.name },
+      car: { id: cars.id, name: cars.name, photo: cars.photo },
     })
     .from(journeys)
     .innerJoin(cars, eq(journeys.carId, cars.id))
@@ -312,6 +319,12 @@ export default async function JourneysPage({ searchParams }: JourneysPageProps) 
               key={data.journey.id}
               className="flex h-full flex-col overflow-hidden rounded-[2rem] border border-border/60 bg-card/90 shadow-sm"
             >
+              <CarImage
+                src={data.car.photo}
+                alt={data.car.name}
+                className="aspect-[16/9]"
+                sizes="(max-width: 1280px) 100vw, 33vw"
+              />
               <CardHeader className="space-y-4 border-b border-border/40 bg-background/50 p-6">
                 <div className="flex items-start justify-between gap-4">
                   <div className="space-y-2">
@@ -347,9 +360,12 @@ export default async function JourneysPage({ searchParams }: JourneysPageProps) 
                     <div className="text-2xl font-black text-foreground">{data.journey.luggageCapacity}kg</div>
                   </div>
                 </div>
-                <div className="rounded-[1.25rem] border border-border/40 bg-muted/20 px-4 py-3 text-sm font-bold text-muted-foreground">
+                <Link
+                  href={`/dashboard/cars/${data.car.id}`}
+                  className="rounded-[1.25rem] border border-border/40 bg-muted/20 px-4 py-3 text-sm font-bold text-muted-foreground transition-colors hover:border-primary/30 hover:text-foreground"
+                >
                   Vehicle: <span className="text-foreground">{data.car.name}</span>
-                </div>
+                </Link>
                 <div className="mt-auto flex items-end justify-between gap-4">
                   <div>
                     <div className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">

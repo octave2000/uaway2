@@ -1,4 +1,9 @@
 import type { Metadata, Viewport } from "next";
+import { NextSSRPlugin } from "@uploadthing/react/next-ssr-plugin";
+import { extractRouterConfig } from "uploadthing/server";
+
+import { uploadRouter } from "@/app/api/uploadthing/core";
+
 import "./globals.css";
 import { Open_Sans } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -44,11 +49,11 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
+          <NextSSRPlugin routerConfig={extractRouterConfig(uploadRouter)} />
           {children}
         </ThemeProvider>
       </body>
     </html>
   );
 }
-
 

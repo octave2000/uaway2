@@ -1,8 +1,10 @@
 import { and, eq } from "drizzle-orm";
-import { ArrowLeft, Briefcase, CarFront, CheckCircle2, ShieldCheck, Users } from "lucide-react";
+import { ArrowLeft, Briefcase, CarFront, ShieldCheck, Users } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { CarImage } from "@/components/shared/car-image";
+import { FileUploadField } from "@/components/uploadthing/file-upload-field";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -27,6 +29,12 @@ export default async function CarDetailsPage(props: { params: Promise<{ id: stri
   if (!car) {
     redirect("/dashboard/cars");
   }
+
+  const verificationLabel = car.verified
+    ? "Verified"
+    : car.documentPhoto
+      ? "Under review"
+      : "Pending verification";
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-6 md:gap-8 md:px-8 md:py-8">
@@ -54,7 +62,7 @@ export default async function CarDetailsPage(props: { params: Promise<{ id: stri
               : "border-amber-500/20 bg-amber-500/10 text-amber-600"
           }`}
         >
-          {car.verified ? "Verified" : "Pending verification"}
+          {verificationLabel}
         </Badge>
       </div>
 
@@ -99,6 +107,15 @@ export default async function CarDetailsPage(props: { params: Promise<{ id: stri
                   />
                 </div>
               </div>
+              <FileUploadField
+                accept="image/*"
+                acceptedLabel="JPG, PNG, or WEBP up to 4MB"
+                endpoint="carPhoto"
+                helper="Replace the photo used on public and passenger journey cards."
+                label="Vehicle photo"
+                name="photoUrl"
+                value={car.photo}
+              />
               <Button type="submit" className="h-12 rounded-2xl px-8 text-sm font-black uppercase tracking-[0.18em]">
                 Save changes
               </Button>
@@ -112,6 +129,12 @@ export default async function CarDetailsPage(props: { params: Promise<{ id: stri
               <CardTitle className="text-xl font-black">Vehicle snapshot</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-3">
+              <CarImage
+                src={car.photo}
+                alt={car.name}
+                className="aspect-[16/9] rounded-[1.5rem] border border-border/40"
+                sizes="(max-width: 1280px) 100vw, 33vw"
+              />
               <div className="rounded-[1.25rem] border border-border/40 bg-background/60 p-4">
                 <div className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
                   <Users className="h-4 w-4 text-primary" />
@@ -143,28 +166,24 @@ export default async function CarDetailsPage(props: { params: Promise<{ id: stri
                 Verification
               </CardTitle>
               <CardDescription className="font-medium">
-                Upload your car document and submit the vehicle for trust review. This demo marks it verified immediately.
+                Upload your car document and submit the vehicle for trust review. Submitted documents stay pending until you review them manually.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
-              <div className="rounded-[1.5rem] border-2 border-dashed border-border/60 bg-muted/10 p-6">
-                <Label className="mb-3 block text-[11px] font-black uppercase tracking-[0.22em] text-muted-foreground">
-                  Registration document
-                </Label>
-                <label className="flex cursor-pointer flex-col items-center gap-3 rounded-[1.25rem] border border-border/50 bg-background/60 p-6 text-center transition-colors hover:border-primary/40 hover:bg-primary/5">
-                  <CheckCircle2 className="h-10 w-10 text-primary/40" />
-                  <span className="text-sm font-bold text-foreground">Tap to choose a document</span>
-                  <span className="text-xs font-medium text-muted-foreground">
-                    JPG, PNG, or PDF placeholder for now.
-                  </span>
-                  <input type="file" name="documentPhoto" accept="image/*,.pdf" className="hidden" />
-                </label>
-              </div>
-
               <form action={submitCarVerificationAction}>
                 <input type="hidden" name="carId" value={car.id} />
+                <FileUploadField
+                  accept="image/*,.pdf"
+                  acceptedLabel="JPG, PNG, or PDF up to 8MB"
+                  endpoint="carDocument"
+                  helper="Upload the registration or ownership document for this vehicle."
+                  kind="document"
+                  label="Registration document"
+                  name="documentPhotoUrl"
+                  value={car.documentPhoto}
+                />
                 <Button type="submit" className="h-12 w-full rounded-2xl text-sm font-black uppercase tracking-[0.18em]">
-                  {car.verified ? "Refresh verification" : "Submit for verification"}
+                  {car.documentPhoto ? "Resubmit for review" : "Submit for verification"}
                 </Button>
               </form>
             </CardContent>

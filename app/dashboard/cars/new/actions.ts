@@ -10,6 +10,7 @@ export async function addCarAction(formData: FormData) {
 
   const name = formData.get("name") as string;
   const plateNumber = formData.get("plateNumber") as string;
+  const photo = (formData.get("photoUrl") as string | null)?.trim() ?? "";
   const seats = parseInt(formData.get("seats") as string, 10);
   const luggageCapacity = parseInt(formData.get("luggageCapacity") as string, 10);
 
@@ -17,12 +18,11 @@ export async function addCarAction(formData: FormData) {
     redirect("/dashboard/cars/new");
   }
   
-  // Note: Photo upload logic goes here. For now we leave it null.
-  
   await db.insert(cars).values({
     driverId: userId,
     name,
     plateNumber: plateNumber.toUpperCase(),
+    photo: photo || null,
     seats,
     luggageCapacity,
   });

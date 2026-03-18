@@ -24,16 +24,25 @@ export async function updateProfileAction(formData: FormData) {
   revalidatePath("/dashboard/profile");
 }
 
-export async function submitVerificationAction() {
+export async function submitVerificationAction(formData: FormData) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
 
-  // In a real app, we would handle file uploads here.
-  // For this project, we mock successful submission.
-  
-  await db.update(users).set({
-    verified: true, // Auto-verify for demo purposes as requested "full features"
-  }).where(eq(users.id, session.user.id));
+  const idPhoto = (formData.get("idPhotoUrl") as string | null)?.trim() ?? "";
+  const selfiePhoto = (formData.get("selfiePhotoUrl") as string | null)?.trim() ?? "";
+
+  if (!idPhoto || !selfiePhoto) {
+    throw new Error("Both the ID document and selfie are required.");
+  }
+
+  await db
+    .update(users)
+    .set({
+      idPhoto,
+      selfiePhoto,
+      verified: false,
+    })
+    .where(eq(users.id, session.user.id));
 
   revalidatePath("/dashboard/profile");
 }

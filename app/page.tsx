@@ -5,6 +5,7 @@ import { journeys, users, cars } from "@/db/schema";
 import { and, desc, eq, gte, ilike, or } from "drizzle-orm";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { CarImage } from "@/components/shared/car-image";
 import { MapPin, Calendar, Users, Car, ArrowRight, Search, ShieldCheck, Zap } from "lucide-react";
 import Image from "next/image";
 import { format } from "date-fns";
@@ -46,7 +47,7 @@ export default async function Home({ searchParams }: HomePageProps) {
   const availableJourneys = await db.select({
     journey: journeys,
     driver: { name: users.name, image: users.image },
-    car: { name: cars.name }
+    car: { name: cars.name, photo: cars.photo }
   }).from(journeys)
     .innerJoin(users, eq(journeys.driverId, users.id))
     .innerJoin(cars, eq(journeys.carId, cars.id))
@@ -120,6 +121,12 @@ export default async function Home({ searchParams }: HomePageProps) {
                   className="group"
                 >
                   <Card className="h-full rounded-[2rem] overflow-hidden border border-border/10 bg-background hover:border-primary/30 transition-all duration-500 hover:shadow-xl hover:-translate-y-1">
+                    <CarImage
+                      src={data.car.photo}
+                      alt={data.car.name}
+                      className="aspect-[16/9]"
+                      sizes="(max-width: 1280px) 100vw, 25vw"
+                    />
                     <CardContent className="p-6 flex flex-col h-full">
                       <div className="flex items-center justify-between mb-6">
                         <div className="flex items-center gap-3">

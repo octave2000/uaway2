@@ -7,6 +7,7 @@ import { format } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { CarImage } from "@/components/shared/car-image";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { db } from "@/db";
@@ -154,6 +155,12 @@ export default async function JourneyDetailsPage(props: JourneyDetailsPageProps)
               </div>
             </div>
             <div className="flex items-start gap-4 p-6">
+              <CarImage
+                src={journeyData.car.photo}
+                alt={journeyData.car.name}
+                className="h-20 w-28 rounded-[1.25rem] border border-border/50"
+                sizes="160px"
+              />
               <div className="space-y-1">
                 <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Vehicle
