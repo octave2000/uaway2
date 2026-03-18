@@ -84,6 +84,7 @@ export const journeys = pgTable("journeys", {
     .references(() => cars.id, { onDelete: "cascade" }),
   origin: text("origin").notNull(),
   destination: text("destination").notNull(),
+  note: text("note"),
   departureTime: timestamp("departure_time").notNull(),
   seatsAvailable: integer("seats_available").notNull(),
   luggageCapacity: integer("luggage_capacity").notNull(),

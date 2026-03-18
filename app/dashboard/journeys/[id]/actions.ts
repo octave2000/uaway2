@@ -35,6 +35,7 @@ export async function bookJourneyAction(formData: FormData) {
       id: journeys.id,
       driverId: journeys.driverId,
       status: journeys.status,
+      departureTime: journeys.departureTime,
       seatsAvailable: journeys.seatsAvailable,
       luggageCapacity: journeys.luggageCapacity,
       pricePerSeat: journeys.pricePerSeat,
@@ -48,6 +49,7 @@ export async function bookJourneyAction(formData: FormData) {
   if (
     !journey ||
     journey.status !== "active" ||
+    journey.departureTime <= new Date() ||
     journey.driverId === userId ||
     seatsBooked > journey.seatsAvailable ||
     luggageSpace > journey.luggageCapacity
@@ -132,7 +134,7 @@ export async function bookJourneyAction(formData: FormData) {
   } catch {
     await db
       .update(bookings)
-      .set({ status: "payment_failed" })
+      .set({ status: "cancelled" })
       .where(eq(bookings.id, newBooking.id));
 
     await db

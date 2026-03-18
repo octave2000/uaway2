@@ -18,12 +18,20 @@ import {
 
 const PAYOUT_RELEASE_DELAY_MS = 6 * 60 * 60 * 1000;
 
+function toTime(value: Date | string | null | undefined) {
+  if (!value) {
+    return 0;
+  }
+
+  return value instanceof Date ? value.getTime() : new Date(value).getTime();
+}
+
 function getPaymentTone(status: "pending" | "success" | "failed" | "refunded") {
   switch (status) {
     case "success":
       return "border-emerald-500/20 bg-emerald-500/10 text-emerald-600";
     case "pending":
-        return "border-amber-500/20 bg-amber-500/10 text-amber-600";
+      return "border-amber-500/20 bg-amber-500/10 text-amber-600";
     case "failed":
       return "border-rose-500/20 bg-rose-500/10 text-rose-600";
     case "refunded":
@@ -75,8 +83,8 @@ export default async function PaymentsPage() {
 
   const totals = paymentRows.reduce(
     (acc, row) => {
-      const paidAt = row.payment.paidAt?.getTime() ?? row.payment.createdAt?.getTime() ?? 0;
-      const currentTime = row.currentTime.getTime();
+      const paidAt = toTime(row.payment.paidAt) || toTime(row.payment.createdAt);
+      const currentTime = toTime(row.currentTime);
       const payoutReady =
         row.payment.status === "success" &&
         row.journey.status === "completed" &&
@@ -170,8 +178,8 @@ export default async function PaymentsPage() {
         <div className="grid gap-4">
           {paymentRows.map((row) => {
             const latestRequest = latestRequestByPaymentId.get(row.payment.id);
-            const paidAt = row.payment.paidAt?.getTime() ?? row.payment.createdAt?.getTime() ?? 0;
-            const currentTime = row.currentTime.getTime();
+            const paidAt = toTime(row.payment.paidAt) || toTime(row.payment.createdAt);
+            const currentTime = toTime(row.currentTime);
             const standardEligible =
               row.payment.status === "success" &&
               row.journey.status === "completed" &&

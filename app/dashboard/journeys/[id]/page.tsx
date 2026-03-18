@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, notInArray } from "drizzle-orm";
 import { ArrowLeft, Calendar, CheckCircle2, Info, MapPin, Users, Briefcase } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -30,7 +30,12 @@ export default async function JourneyDetailsPage(props: JourneyDetailsPageProps)
       .select({
         journey: journeys,
         driver: { id: users.id, name: users.name, image: users.image, verified: users.verified },
-        car: { name: cars.name, plateNumber: cars.plateNumber, verified: cars.verified },
+        car: {
+          name: cars.name,
+          plateNumber: cars.plateNumber,
+          verified: cars.verified,
+          photo: cars.photo,
+        },
       })
       .from(journeys)
       .innerJoin(users, eq(journeys.driverId, users.id))
@@ -55,9 +60,15 @@ export default async function JourneyDetailsPage(props: JourneyDetailsPageProps)
   const journeyData = data[0];
 
   const existingBookings = await db
-    .select()
+    .select({ id: bookings.id })
     .from(bookings)
-    .where(and(eq(bookings.clientId, userId), eq(bookings.journeyId, params.id)));
+    .where(
+      and(
+        eq(bookings.clientId, userId),
+        eq(bookings.journeyId, params.id),
+        notInArray(bookings.status, ["cancelled", "payment_failed"]),
+      ),
+    );
 
   const alreadyBooked = existingBookings.length > 0;
 
@@ -67,6 +78,11 @@ export default async function JourneyDetailsPage(props: JourneyDetailsPageProps)
 
   const paymentError =
     typeof searchParams.error === "string" ? searchParams.error : null;
+  const hasDeparted = new Date(journeyData.journey.departureTime) <= new Date();
+  const bookingUnavailable =
+    journeyData.journey.status !== "active" ||
+    journeyData.journey.seatsAvailable < 1 ||
+    hasDeparted;
 
   return (
     <div className="mx-auto mb-24 flex w-full max-w-3xl flex-col gap-6 px-4 py-6 md:mb-0 md:px-8 md:py-8">
@@ -87,7 +103,7 @@ export default async function JourneyDetailsPage(props: JourneyDetailsPageProps)
       {paymentError === "payment_failed" ? (
         <Card className="rounded-[2rem] border border-rose-500/20 bg-rose-500/10 p-6">
           <div className="text-sm font-medium text-rose-700 dark:text-rose-400">
-            We could not initialize the Flutterwave M-Pesa payment. Confirm your phone number and try again.
+            We could not initialize the Flutterwave M-Pesa payment. That failed attempt was cancelled, so you can correct the phone number and try again.
           </div>
         </Card>
       ) : null}
@@ -151,6 +167,17 @@ export default async function JourneyDetailsPage(props: JourneyDetailsPageProps)
           </div>
 
           <div className="flex flex-col gap-6 p-6">
+            {journeyData.journey.note ? (
+              <div className="rounded-[1.5rem] border border-border/50 bg-background/70 p-4">
+                <div className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
+                  Driver note
+                </div>
+                <div className="text-sm font-medium leading-6 text-foreground">
+                  {journeyData.journey.note}
+                </div>
+              </div>
+            ) : null}
+
             <div className="grid grid-cols-2 gap-4 rounded-[1.5rem] border border-border/50 bg-background/60 p-4">
               <div className="flex flex-col items-center justify-center gap-1 border-r text-center">
                 <Users className="mb-1 h-6 w-6 text-primary" />
@@ -174,7 +201,15 @@ export default async function JourneyDetailsPage(props: JourneyDetailsPageProps)
                   <div className="text-sm opacity-90">
                     Use the bookings page to verify payment, request ride start, or complete the trip.
                   </div>
+                  </div>
                 </div>
+            ) : bookingUnavailable ? (
+              <div className="rounded-[1.5rem] border border-amber-500/20 bg-amber-500/10 p-5 text-sm font-medium text-amber-700 dark:text-amber-400">
+                {hasDeparted
+                  ? "This ride has already departed and is no longer available for booking."
+                  : journeyData.journey.seatsAvailable < 1
+                    ? "This ride is fully booked."
+                    : "This ride is not available for booking anymore."}
               </div>
             ) : (
               <form action={bookJourneyAction} className="space-y-4">

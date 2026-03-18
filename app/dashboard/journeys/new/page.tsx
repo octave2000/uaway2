@@ -93,6 +93,20 @@ export default async function NewJourneyPage() {
                    <Input id="luggageCapacity" name="luggageCapacity" type="number" min={0} placeholder="50" required />
                  </div>
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="note">Journey Note</Label>
+                <textarea
+                  id="note"
+                  name="note"
+                  rows={4}
+                  maxLength={280}
+                  placeholder="Add pickup guidance, timing notes, or anything passengers should know."
+                  className="flex min-h-28 w-full rounded-2xl border border-input bg-transparent px-4 py-3 text-sm font-medium shadow-sm outline-none transition-colors placeholder:text-muted-foreground/60 placeholder:font-medium focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                />
+                <p className="text-xs font-medium text-muted-foreground">
+                  Optional. Keep it short and useful for passengers.
+                </p>
+              </div>
             </div>
             <Button type="submit" className="w-full">Post Journey</Button>
           </form>

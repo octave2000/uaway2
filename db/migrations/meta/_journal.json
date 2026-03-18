@@ -15,6 +15,13 @@
       "when": 1773656155927,
       "tag": "0001_violet_grey_gargoyle",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1773835423527,
+      "tag": "0002_skinny_gressill",
+      "breakpoints": true
     }
   ]
 }

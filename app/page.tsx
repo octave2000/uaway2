@@ -2,7 +2,7 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import { db } from "@/db";
 import { journeys, users, cars } from "@/db/schema";
-import { and, desc, eq, ilike, or } from "drizzle-orm";
+import { and, desc, eq, gte, ilike, or } from "drizzle-orm";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { MapPin, Calendar, Users, Car, ArrowRight, Search, ShieldCheck, Zap } from "lucide-react";
@@ -18,6 +18,7 @@ export default async function Home({ searchParams }: HomePageProps) {
   const session = await auth();
   const params = await searchParams;
   const query = typeof params.q === "string" ? params.q.trim() : "";
+  const now = new Date();
   const userRole =
     session?.user?.id
       ? (
@@ -29,7 +30,7 @@ export default async function Home({ searchParams }: HomePageProps) {
         )[0]?.defaultRole ?? null
       : null;
 
-  const filters = [eq(journeys.status, "active")];
+  const filters = [eq(journeys.status, "active"), gte(journeys.departureTime, now)];
 
   if (query) {
     filters.push(

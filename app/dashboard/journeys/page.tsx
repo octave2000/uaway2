@@ -42,6 +42,7 @@ type JourneysPageProps = {
 export default async function JourneysPage({ searchParams }: JourneysPageProps) {
   const { userId, role } = await requireAuthenticatedUser();
   const params = await searchParams;
+  const now = new Date();
 
   await autoCompleteExpiredJourneys();
 
@@ -54,7 +55,11 @@ export default async function JourneysPage({ searchParams }: JourneysPageProps) 
     const destination = typeof params.destination === "string" ? params.destination.trim() : "";
     const date = typeof params.date === "string" ? params.date : "";
 
-    const filters = [eq(journeys.status, "active"), ne(journeys.driverId, userId)];
+    const filters = [
+      eq(journeys.status, "active"),
+      ne(journeys.driverId, userId),
+      gte(journeys.departureTime, now),
+    ];
 
     if (origin) {
       filters.push(ilike(journeys.origin, `%${origin}%`));

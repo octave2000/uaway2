@@ -13,6 +13,7 @@ export async function postJourneyAction(formData: FormData) {
   const carId = formData.get("carId") as string;
   const origin = formData.get("origin") as string;
   const destination = formData.get("destination") as string;
+  const note = (formData.get("note") as string | null)?.trim() ?? "";
   const departureTime = new Date(formData.get("departureTime") as string);
   const pricePerSeat = parseInt(formData.get("pricePerSeat") as string, 10);
   const seatsAvailable = parseInt(formData.get("seatsAvailable") as string, 10);
@@ -52,19 +53,23 @@ export async function postJourneyAction(formData: FormData) {
     redirect("/dashboard/journeys/new");
   }
 
-  await db.insert(journeys).values({
-    driverId: userId,
-    carId,
-    origin,
-    destination,
-    departureTime,
-    pricePerSeat,
-    seatsAvailable,
-    luggageCapacity,
-    status: "active",
-  });
+  const [newJourney] = await db
+    .insert(journeys)
+    .values({
+      driverId: userId,
+      carId,
+      origin,
+      destination,
+      note: note || null,
+      departureTime,
+      pricePerSeat,
+      seatsAvailable,
+      luggageCapacity,
+      status: "active",
+    })
+    .returning({ id: journeys.id });
 
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/journeys");
-  redirect("/dashboard/journeys");
+  redirect(`/dashboard/journeys/${newJourney.id}/manage`);
 }
