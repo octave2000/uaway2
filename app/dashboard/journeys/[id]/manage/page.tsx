@@ -57,7 +57,13 @@ export default async function ManageJourneyPage(props: { params: Promise<{ id: s
         )
     : [];
 
-  const totalEarned = journeyBookings.reduce((acc, current) => acc + current.payment.amount, 0);
+  const collectedPayments = journeyBookings.filter(
+    (bookingRecord) => bookingRecord.payment.status === "success",
+  );
+  const totalEarned = collectedPayments.reduce(
+    (acc, current) => acc + current.payment.amount,
+    0,
+  );
   const startRequester = journeyBookings.find(
     (bookingRecord) => bookingRecord.client.id === journey.startRequestedByClientId,
   );
@@ -158,13 +164,24 @@ export default async function ManageJourneyPage(props: { params: Promise<{ id: s
                         className={
                           bookingRecord.payment.status === "success"
                             ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-600"
-                            : "border-amber-500/20 bg-amber-500/10 text-amber-600"
+                            : bookingRecord.payment.status === "failed"
+                              ? "border-rose-500/20 bg-rose-500/10 text-rose-600"
+                              : "border-amber-500/20 bg-amber-500/10 text-amber-600"
                         }
                       >
                         {bookingRecord.payment.status}
                       </Badge>
-                      <span className="text-sm font-black text-primary">
-                        +{bookingRecord.payment.amount} KES
+                      <span
+                        className={`text-sm font-black ${
+                          bookingRecord.payment.status === "success"
+                            ? "text-primary"
+                            : bookingRecord.payment.status === "failed"
+                              ? "text-rose-600"
+                              : "text-amber-600"
+                        }`}
+                      >
+                        {bookingRecord.payment.status === "success" ? "+" : ""}
+                        {bookingRecord.payment.amount} KES
                       </span>
                     </div>
                   </div>
