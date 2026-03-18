@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { CarImage } from "@/components/shared/car-image";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { db } from "@/db";
 import { bookings, cars, journeys, users } from "@/db/schema";
 import { requireRole } from "@/lib/auth/roles";
@@ -208,8 +209,8 @@ export default async function JourneyDetailsPage(props: JourneyDetailsPageProps)
                   <div className="text-sm opacity-90">
                     Use the bookings page to verify payment, request ride start, or complete the trip.
                   </div>
-                  </div>
                 </div>
+              </div>
             ) : bookingUnavailable ? (
               <div className="rounded-[1.5rem] border border-amber-500/20 bg-amber-500/10 p-5 text-sm font-medium text-amber-700 dark:text-amber-400">
                 {hasDeparted
@@ -267,9 +268,14 @@ export default async function JourneyDetailsPage(props: JourneyDetailsPageProps)
                   </div>
                 </div>
                 {journeyData.journey.seatsAvailable > 0 ? (
-                  <Button type="submit" size="lg" className="w-full rounded-2xl text-lg font-black">
+                  <SubmitButton
+                    type="submit"
+                    size="lg"
+                    className="w-full rounded-2xl text-lg font-black"
+                    pendingText="Starting payment..."
+                  >
                     Start M-Pesa payment
-                  </Button>
+                  </SubmitButton>
                 ) : (
                   <Button disabled size="lg" className="w-full rounded-2xl text-lg font-black">
                     Journey full

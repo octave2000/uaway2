@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { db } from "@/db";
 import { cars } from "@/db/schema";
 import { requireRole } from "@/lib/auth/roles";
@@ -116,9 +117,13 @@ export default async function CarDetailsPage(props: { params: Promise<{ id: stri
                 name="photoUrl"
                 value={car.photo}
               />
-              <Button type="submit" className="h-12 rounded-2xl px-8 text-sm font-black uppercase tracking-[0.18em]">
+              <SubmitButton
+                type="submit"
+                className="h-12 rounded-2xl px-8 text-sm font-black uppercase tracking-[0.18em]"
+                pendingText="Saving..."
+              >
                 Save changes
-              </Button>
+              </SubmitButton>
             </form>
           </CardContent>
         </Card>
@@ -182,9 +187,13 @@ export default async function CarDetailsPage(props: { params: Promise<{ id: stri
                   name="documentPhotoUrl"
                   value={car.documentPhoto}
                 />
-                <Button type="submit" className="h-12 w-full rounded-2xl text-sm font-black uppercase tracking-[0.18em]">
+                <SubmitButton
+                  type="submit"
+                  className="h-12 w-full rounded-2xl text-sm font-black uppercase tracking-[0.18em]"
+                  pendingText={car.documentPhoto ? "Resubmitting..." : "Submitting..."}
+                >
                   {car.documentPhoto ? "Resubmit for review" : "Submit for verification"}
-                </Button>
+                </SubmitButton>
               </form>
             </CardContent>
           </Card>

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { db } from "@/db";
 import { bookings, cars, journeys, payments, payoutRequests, reviews, users } from "@/db/schema";
 import { requireRole } from "@/lib/auth/roles";
@@ -218,9 +219,13 @@ export default async function BookingsPage({ searchParams }: BookingsPageProps) 
                         </div>
                         <form action={checkPaymentStatusAction}>
                           <input type="hidden" name="bookingId" value={data.booking.id} />
-                          <Button type="submit" className="rounded-2xl font-black uppercase tracking-[0.18em]">
+                          <SubmitButton
+                            type="submit"
+                            className="rounded-2xl font-black uppercase tracking-[0.18em]"
+                            pendingText="Checking..."
+                          >
                             Check payment status
-                          </Button>
+                          </SubmitButton>
                         </form>
                       </div>
                     ) : null}
@@ -241,9 +246,13 @@ export default async function BookingsPage({ searchParams }: BookingsPageProps) 
                         </div>
                         <form action={requestRideStartAction}>
                           <input type="hidden" name="bookingId" value={data.booking.id} />
-                          <Button type="submit" className="rounded-2xl font-black uppercase tracking-[0.18em]">
+                          <SubmitButton
+                            type="submit"
+                            className="rounded-2xl font-black uppercase tracking-[0.18em]"
+                            pendingText="Requesting..."
+                          >
                             Request ride start
-                          </Button>
+                          </SubmitButton>
                         </form>
                       </div>
                     ) : null}
@@ -273,9 +282,13 @@ export default async function BookingsPage({ searchParams }: BookingsPageProps) 
                         </div>
                         <form action={confirmRideEndAction}>
                           <input type="hidden" name="bookingId" value={data.booking.id} />
-                          <Button type="submit" className="rounded-2xl font-black uppercase tracking-[0.18em]">
+                          <SubmitButton
+                            type="submit"
+                            className="rounded-2xl font-black uppercase tracking-[0.18em]"
+                            pendingText="Confirming..."
+                          >
                             Confirm ride end
-                          </Button>
+                          </SubmitButton>
                         </form>
                       </div>
                     ) : null}
@@ -293,15 +306,24 @@ export default async function BookingsPage({ searchParams }: BookingsPageProps) 
                           <div className="flex flex-col gap-3 md:flex-row">
                             <form action={approveAdvancePayoutAction} className="flex-1">
                               <input type="hidden" name="payoutRequestId" value={latestAdvanceRequest.id} />
-                              <Button type="submit" className="w-full rounded-2xl font-black uppercase tracking-[0.18em]">
+                              <SubmitButton
+                                type="submit"
+                                className="w-full rounded-2xl font-black uppercase tracking-[0.18em]"
+                                pendingText="Approving..."
+                              >
                                 Approve request
-                              </Button>
+                              </SubmitButton>
                             </form>
                             <form action={rejectAdvancePayoutAction} className="flex-1">
                               <input type="hidden" name="payoutRequestId" value={latestAdvanceRequest.id} />
-                              <Button type="submit" variant="outline" className="w-full rounded-2xl font-black uppercase tracking-[0.18em]">
+                              <SubmitButton
+                                type="submit"
+                                variant="outline"
+                                className="w-full rounded-2xl font-black uppercase tracking-[0.18em]"
+                                pendingText="Rejecting..."
+                              >
                                 Reject request
-                              </Button>
+                              </SubmitButton>
                             </form>
                           </div>
                         ) : null}
@@ -332,9 +354,13 @@ export default async function BookingsPage({ searchParams }: BookingsPageProps) 
                             <Label className="text-xs font-bold text-muted-foreground">Comment</Label>
                             <Input name="comment" placeholder="Tell us about the trip..." className="rounded-2xl" />
                           </div>
-                          <Button type="submit" className="rounded-2xl font-black uppercase tracking-[0.18em]">
+                          <SubmitButton
+                            type="submit"
+                            className="rounded-2xl font-black uppercase tracking-[0.18em]"
+                            pendingText="Submitting..."
+                          >
                             Submit review
-                          </Button>
+                          </SubmitButton>
                         </form>
                       </div>
                     ) : null}

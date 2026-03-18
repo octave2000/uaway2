@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { FileUploadField } from "@/components/uploadthing/file-upload-field";
@@ -61,7 +62,9 @@ export default async function NewCarPage() {
               label="Vehicle Photo"
               name="photoUrl"
             />
-            <Button type="submit" className="w-full">Register Vehicle</Button>
+            <SubmitButton type="submit" className="w-full" pendingText="Registering vehicle...">
+              Register Vehicle
+            </SubmitButton>
           </form>
         </CardContent>
       </Card>

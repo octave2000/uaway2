@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { db } from "@/db";
 import { bookings, journeys, payments, payoutRequests, users } from "@/db/schema";
 import { requireRole } from "@/lib/auth/roles";
@@ -200,9 +201,13 @@ export default async function ManageJourneyPage(props: { params: Promise<{ id: s
                   </div>
                   <form action={confirmRideStartAction}>
                     <input type="hidden" name="journeyId" value={journey.id} />
-                    <Button type="submit" className="w-full rounded-2xl font-black uppercase tracking-[0.18em]">
+                    <SubmitButton
+                      type="submit"
+                      className="w-full rounded-2xl font-black uppercase tracking-[0.18em]"
+                      pendingText="Confirming start..."
+                    >
                       Confirm ride start
-                    </Button>
+                    </SubmitButton>
                   </form>
                 </div>
               ) : null}
@@ -210,9 +215,13 @@ export default async function ManageJourneyPage(props: { params: Promise<{ id: s
               {journey.status === "ongoing" && !journey.endRequestedAt ? (
                 <form action={requestRideEndAction}>
                   <input type="hidden" name="journeyId" value={journey.id} />
-                  <Button type="submit" className="w-full rounded-2xl font-black uppercase tracking-[0.18em]">
+                  <SubmitButton
+                    type="submit"
+                    className="w-full rounded-2xl font-black uppercase tracking-[0.18em]"
+                    pendingText="Requesting end..."
+                  >
                     Request ride end
-                  </Button>
+                  </SubmitButton>
                 </form>
               ) : null}
 

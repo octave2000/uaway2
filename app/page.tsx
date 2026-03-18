@@ -6,6 +6,7 @@ import { and, desc, eq, gte, ilike, or } from "drizzle-orm";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { CarImage } from "@/components/shared/car-image";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { MapPin, Calendar, Users, Car, ArrowRight, Search, ShieldCheck, Zap } from "lucide-react";
 import Image from "next/image";
 import { format } from "date-fns";
@@ -59,7 +60,7 @@ export default async function Home({ searchParams }: HomePageProps) {
     <div className="flex flex-col min-h-screen bg-background selection:bg-primary/20">
       <Navbar session={session} role={userRole} />
 
-      <main className="flex-1 pt-24 md:pt-32">
+      <main className="page-shell-enter flex-1 pt-24 md:pt-32">
         {/* Simple Search Section */}
         <section className="px-4 pb-12">
           <div className="container mx-auto max-w-4xl">
@@ -83,13 +84,17 @@ export default async function Home({ searchParams }: HomePageProps) {
                         type="text"
                         placeholder="Where are you heading?"
                         defaultValue={query}
-                        className="flex-1 bg-transparent outline-none text-sm md:text-lg font-bold placeholder:text-muted-foreground/40 w-full"
+                        className="w-full flex-1 bg-transparent text-sm font-bold text-foreground outline-none placeholder:font-normal placeholder:text-muted-foreground/55 md:text-lg"
                       />
                     </div>
                     <div className="w-full md:w-auto">
-                      <Button type="submit" className="w-full md:w-auto h-12 md:h-14 rounded-[1rem] md:rounded-[1.8rem] px-8 bg-primary text-primary-foreground hover:bg-primary/90 font-black text-sm md:text-base shadow-lg shadow-primary/20 transition-all duration-500">
+                      <SubmitButton
+                        type="submit"
+                        pendingText="Searching..."
+                        className="h-12 w-full rounded-[1rem] bg-primary px-8 text-sm font-black text-primary-foreground shadow-lg shadow-primary/20 transition-all duration-500 hover:bg-primary/90 md:h-14 md:w-auto md:rounded-[1.8rem] md:text-base"
+                      >
                         Search Rides
-                      </Button>
+                      </SubmitButton>
                     </div>
                   </div>
                 </form>

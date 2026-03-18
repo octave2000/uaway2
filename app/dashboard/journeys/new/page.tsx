@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { postJourneyAction } from "./actions";
@@ -56,7 +57,7 @@ export default async function NewJourneyPage() {
                   name="carId" 
                   required 
                   defaultValue=""
-                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+                  className="flex h-10 w-full rounded-2xl border border-input bg-transparent px-3 py-2 text-sm font-medium text-foreground shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <option value="" disabled>Select a car...</option>
                   {userCars.map(car => (
@@ -101,14 +102,16 @@ export default async function NewJourneyPage() {
                   rows={4}
                   maxLength={280}
                   placeholder="Add pickup guidance, timing notes, or anything passengers should know."
-                  className="flex min-h-28 w-full rounded-2xl border border-input bg-transparent px-4 py-3 text-sm font-medium shadow-sm outline-none transition-colors placeholder:text-muted-foreground/60 placeholder:font-medium focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex min-h-28 w-full rounded-2xl border border-input bg-transparent px-4 py-3 text-sm font-medium text-foreground shadow-sm outline-none transition-colors placeholder:font-normal placeholder:text-muted-foreground/55 focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                 />
                 <p className="text-xs font-medium text-muted-foreground">
                   Optional. Keep it short and useful for passengers.
                 </p>
               </div>
             </div>
-            <Button type="submit" className="w-full">Post Journey</Button>
+            <SubmitButton type="submit" className="w-full" pendingText="Posting journey...">
+              Post Journey
+            </SubmitButton>
           </form>
         </CardContent>
       </Card>

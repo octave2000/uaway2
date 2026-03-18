@@ -10,10 +10,10 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { CheckCircle2, AlertCircle, CarFront, MapPin } from "lucide-react";
 import { signOutUser } from "@/app/(auth)/actions";
 import { FileUploadField } from "@/components/uploadthing/file-upload-field";
@@ -102,9 +102,9 @@ export default async function ProfilePage() {
                 />
               </div>
             </div>
-            <Button type="submit" className="font-bold">
+            <SubmitButton type="submit" className="font-bold" pendingText="Saving...">
               Save Changes
-            </Button>
+            </SubmitButton>
           </CardContent>
         </form>
       </Card>
@@ -118,30 +118,19 @@ export default async function ProfilePage() {
           <div className="space-y-3">
             <Label className="text-sm font-bold">Default Dashboard Mode</Label>
             <div className="grid grid-cols-2 gap-4">
-              <form
-                action={updateProfileAction}
-                className="col-span-2 grid grid-cols-2 gap-4"
-              >
-                <input
-                  type="hidden"
-                  name="name"
-                  defaultValue={user.name || ""}
-                />
-                <input
-                  type="hidden"
-                  name="phone"
-                  defaultValue={user.phone || ""}
-                />
-
-                <button
+              <form action={updateProfileAction} className="col-span-1">
+                <input type="hidden" name="name" defaultValue={user.name || ""} />
+                <input type="hidden" name="phone" defaultValue={user.phone || ""} />
+                <SubmitButton
                   name="defaultRole"
                   value="passenger"
                   type="submit"
+                  pendingText="Saving..."
                   className={cn(
-                    "flex flex-col items-center gap-3 p-6 rounded-2xl border-2 transition-all",
+                    "h-auto w-full flex-col gap-3 rounded-2xl border-2 px-6 py-6 transition-all",
                     user.defaultRole === "passenger"
-                      ? "border-primary bg-primary/5 shadow-sm"
-                      : "border-border/50 hover:border-primary/30",
+                      ? "border-primary bg-primary/5 text-primary shadow-sm hover:bg-primary/5"
+                      : "border-border/50 bg-background text-muted-foreground hover:border-primary/30 hover:bg-background",
                   )}
                 >
                   <MapPin
@@ -165,17 +154,22 @@ export default async function ProfilePage() {
                   {user.defaultRole === "passenger" && (
                     <CheckCircle2 className="w-4 h-4 text-primary mt-1" />
                   )}
-                </button>
+                </SubmitButton>
+              </form>
 
-                <button
+              <form action={updateProfileAction} className="col-span-1">
+                <input type="hidden" name="name" defaultValue={user.name || ""} />
+                <input type="hidden" name="phone" defaultValue={user.phone || ""} />
+                <SubmitButton
                   name="defaultRole"
                   value="driver"
                   type="submit"
+                  pendingText="Saving..."
                   className={cn(
-                    "flex flex-col items-center gap-3 p-6 rounded-2xl border-2 transition-all",
+                    "h-auto w-full flex-col gap-3 rounded-2xl border-2 px-6 py-6 transition-all",
                     user.defaultRole === "driver"
-                      ? "border-secondary bg-secondary/5 shadow-sm"
-                      : "border-border/50 hover:border-secondary/30",
+                      ? "border-secondary bg-secondary/5 text-secondary shadow-sm hover:bg-secondary/5"
+                      : "border-border/50 bg-background text-muted-foreground hover:border-secondary/30 hover:bg-background",
                   )}
                 >
                   <CarFront
@@ -199,7 +193,7 @@ export default async function ProfilePage() {
                   {user.defaultRole === "driver" && (
                     <CheckCircle2 className="w-4 h-4 text-secondary mt-1" />
                   )}
-                </button>
+                </SubmitButton>
               </form>
             </div>
           </div>
@@ -248,25 +242,28 @@ export default async function ProfilePage() {
                 value={user.selfiePhoto}
               />
             </div>
-            <Button
+            <SubmitButton
               variant="secondary"
               className="w-full font-black uppercase tracking-widest py-6 rounded-2xl shadow-lg border-none"
+              type="submit"
+              pendingText={verificationSubmitted ? "Resubmitting..." : "Submitting..."}
             >
               {verificationSubmitted ? "Resubmit for Review" : "Submit for Verification"}
-            </Button>
+            </SubmitButton>
           </CardContent>
         </form>
       </Card>
 
       <div className="pt-8 mb-12">
         <form action={signOutUser}>
-          <Button
+          <SubmitButton
             variant="ghost"
             className="w-full font-bold text-muted-foreground hover:text-destructive hover:bg-destructive/10 border-border/40"
             type="submit"
+            pendingText="Signing out..."
           >
             Sign Out of Account
-          </Button>
+          </SubmitButton>
         </form>
       </div>
     </div>

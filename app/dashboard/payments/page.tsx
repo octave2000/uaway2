@@ -6,6 +6,7 @@ import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { db } from "@/db";
 import { bookings, journeys, payments, payoutRequests, users } from "@/db/schema";
 import { requireRole } from "@/lib/auth/roles";
@@ -233,17 +234,26 @@ export default async function PaymentsPage() {
                     {standardEligible && !latestRequest ? (
                       <form action={requestStandardPayoutAction}>
                         <input type="hidden" name="paymentId" value={row.payment.id} />
-                        <Button type="submit" className="w-full rounded-2xl font-black uppercase tracking-[0.18em]">
+                        <SubmitButton
+                          type="submit"
+                          className="w-full rounded-2xl font-black uppercase tracking-[0.18em]"
+                          pendingText="Requesting payout..."
+                        >
                           Request standard payout
-                        </Button>
+                        </SubmitButton>
                       </form>
                     ) : null}
                     {advanceEligible && !latestRequest ? (
                       <form action={requestAdvancePayoutAction}>
                         <input type="hidden" name="paymentId" value={row.payment.id} />
-                        <Button type="submit" variant="outline" className="w-full rounded-2xl font-black uppercase tracking-[0.18em]">
+                        <SubmitButton
+                          type="submit"
+                          variant="outline"
+                          className="w-full rounded-2xl font-black uppercase tracking-[0.18em]"
+                          pendingText="Requesting advance..."
+                        >
                           Request advance payout
-                        </Button>
+                        </SubmitButton>
                       </form>
                     ) : null}
                     <Button asChild variant="outline" className="rounded-2xl">

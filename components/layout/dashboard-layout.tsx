@@ -22,7 +22,7 @@ export function DashboardLayout({
       </div>
       
       {/* Main Content Area */}
-      <main className="flex-1 md:pl-64 pb-20 md:pb-0 z-10 relative">
+      <main className="page-shell-enter relative z-10 flex-1 pb-20 md:pl-64 md:pb-0">
         {children}
       </main>
 
