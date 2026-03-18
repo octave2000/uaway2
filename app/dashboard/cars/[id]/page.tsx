@@ -36,6 +36,16 @@ export default async function CarDetailsPage(props: { params: Promise<{ id: stri
     : car.documentPhoto
       ? "Under review"
       : "Pending verification";
+  const verificationActionLabel = car.verified
+    ? "Upload updated document"
+    : car.documentPhoto
+      ? "Resubmit for review"
+      : "Submit for verification";
+  const verificationPendingText = car.verified
+    ? "Uploading update..."
+    : car.documentPhoto
+      ? "Resubmitting..."
+      : "Submitting...";
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-6 md:gap-8 md:px-8 md:py-8">
@@ -175,13 +185,22 @@ export default async function CarDetailsPage(props: { params: Promise<{ id: stri
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
+              {car.verified ? (
+                <div className="rounded-[1.5rem] border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm font-medium text-emerald-700 dark:text-emerald-400">
+                  This vehicle is currently verified. You can still upload a new registration document any time if details change. A new upload will return the vehicle to manual review.
+                </div>
+              ) : null}
               <form action={submitCarVerificationAction}>
                 <input type="hidden" name="carId" value={car.id} />
                 <FileUploadField
                   accept="image/*,.pdf"
                   acceptedLabel="JPG, PNG, or PDF up to 8MB"
                   endpoint="carDocument"
-                  helper="Upload the registration or ownership document for this vehicle."
+                  helper={
+                    car.verified
+                      ? "Replace the approved document for this vehicle."
+                      : "Upload the registration or ownership document for this vehicle."
+                  }
                   kind="document"
                   label="Registration document"
                   name="documentPhotoUrl"
@@ -190,9 +209,9 @@ export default async function CarDetailsPage(props: { params: Promise<{ id: stri
                 <SubmitButton
                   type="submit"
                   className="h-12 w-full rounded-2xl text-sm font-black uppercase tracking-[0.18em]"
-                  pendingText={car.documentPhoto ? "Resubmitting..." : "Submitting..."}
+                  pendingText={verificationPendingText}
                 >
-                  {car.documentPhoto ? "Resubmit for review" : "Submit for verification"}
+                  {verificationActionLabel}
                 </SubmitButton>
               </form>
             </CardContent>
