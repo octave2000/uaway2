@@ -1,6 +1,9 @@
 # TODO
 
 ## Current Status
+- [x] Exclude failed payments from driver journey collection totals and failed amount highlights
+- [x] Keep verified vehicle document replacement visible and understandable in the vehicle manager
+- [x] Simplify the shared loading state so it fills the route area cleanly across public, auth, and dashboard pages
 - [x] Prevent passengers from seeing or booking rides that have already departed
 - [x] Cancel failed M-Pesa initialization attempts so the same ride can be booked again
 - [x] Store vehicle photos and verification documents in UploadThing with proper fallbacks on ride cards

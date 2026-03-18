@@ -13,6 +13,12 @@
 - [x] Improved placeholder contrast for shared inputs and journey note entry fields
 - [x] Ran verification after each batch and kept commit history segmented by fix area
 
+## 2026-03-18 Follow-up Fixes
+- [x] Stopped failed payment attempts from inflating the driver journey "Collected" total
+- [x] Kept the verified vehicle screen explicit about uploading replacement registration documents
+- [x] Replaced the complex route loader with a simpler full-area shared loading state
+- [x] Re-ran full lint and typecheck after the follow-up fixes
+
 ## 2026-03-16 Active Work
 - [x] Added shared server-side role helpers
 - [x] Guarded driver-only pages and actions for vehicles and journey posting
@@ -38,3 +44,6 @@
   - `ab68ace` `fix: block stale ride bookings and add journey notes`
   - `172b6e9` `feat: add uploadthing-backed car and verification uploads`
   - `0e2c2e0` `feat: add route feedback and form loading states`
+  - `d58b673` `fix: exclude failed payments from journey totals`
+  - `562e1c0` `fix: keep verified car document uploads accessible`
+  - `96bb596` `refactor: simplify shared route loading state`
