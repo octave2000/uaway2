@@ -1,5 +1,17 @@
 # Progress
 
+## 2026-03-18 Hardening Pass
+- [x] Removed departed rides from public and passenger discovery flows and blocked stale bookings at action level
+- [x] Added journey notes and redirected drivers straight into the journey management page after posting
+- [x] Cancelled failed M-Pesa initialization attempts so passengers can retry booking cleanly
+- [x] Fixed the driver payments page timestamp crash when `CURRENT_TIMESTAMP` comes back as a string
+- [x] Moved vehicle photos, identity documents, selfies, and car documents to UploadThing
+- [x] Added default vehicle imagery and surfaced actual car photos on ride cards and ride details
+- [x] Kept driver and vehicle verification in manual review state instead of auto-marking as verified
+- [x] Added animated loading screens, route error screens, dashboard/public 404 pages, and page-enter motion
+- [x] Added pending/loading button states across auth, booking, payout, profile, vehicle, and journey forms
+- [x] Improved placeholder contrast for shared inputs and journey note entry fields
+- [x] Ran verification after each batch and kept commit history segmented by fix area
 
 ## 2026-03-16 Active Work
 - [x] Added shared server-side role helpers
@@ -23,3 +35,6 @@
   - `9d1f509` `feat: add driver payments overview`
   - `d50df99` `feat: add ride lifecycle and mpesa payment flow`
   - `b48dd8c` `feat: add journey search and sample seed data`
+  - `ab68ace` `fix: block stale ride bookings and add journey notes`
+  - `172b6e9` `feat: add uploadthing-backed car and verification uploads`
+  - `0e2c2e0` `feat: add route feedback and form loading states`

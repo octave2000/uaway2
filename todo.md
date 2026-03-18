@@ -1,6 +1,13 @@
 # TODO
 
 ## Current Status
+- [x] Prevent passengers from seeing or booking rides that have already departed
+- [x] Cancel failed M-Pesa initialization attempts so the same ride can be booked again
+- [x] Store vehicle photos and verification documents in UploadThing with proper fallbacks on ride cards
+- [x] Keep account and vehicle verification in pending review until manually approved
+- [x] Add route loading, route error, and not-found experiences for public, auth, and dashboard flows
+- [x] Add visible pending/loading states to submit buttons across the main auth and dashboard actions
+- [x] Improve placeholder contrast so empty input hints are visually distinct from entered values
 - [x] Define and implement ride lifecycle state for passenger start requests and driver confirmations
 - [x] Add clearer notification and status surfaces for pending ride actions and payout updates
 - [x] Add clearer notification and status surfaces for pending bookings, payments, and ride actions
