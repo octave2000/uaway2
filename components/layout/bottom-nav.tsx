@@ -25,6 +25,7 @@ const adminNavItems = [
   { href: "/dashboard/admin/vehicles", label: "Cars", icon: CarFront, exact: false },
   { href: "/dashboard/admin/bookings", label: "Bookings", icon: Calendar, exact: false },
   { href: "/dashboard/admin/payments", label: "Payments", icon: Wallet, exact: false },
+  { href: "/dashboard/profile", label: "Profile", icon: User, exact: false },
 ];
 
 export function BottomNav({ role }: { role: "passenger" | "driver" | "super_admin" }) {

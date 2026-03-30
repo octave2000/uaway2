@@ -26,6 +26,7 @@ const adminNavItems = [
   { href: "/dashboard/admin/journeys", label: "Journeys", icon: Route, exact: false },
   { href: "/dashboard/admin/bookings", label: "Bookings", icon: Calendar, exact: false },
   { href: "/dashboard/admin/payments", label: "Payments", icon: Wallet, exact: false },
+  { href: "/dashboard/profile", label: "Profile", icon: User, exact: false },
 ];
 
 export function Sidebar({ role }: { role: "passenger" | "driver" | "super_admin" }) {
