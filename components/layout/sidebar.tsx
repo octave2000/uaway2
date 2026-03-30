@@ -1,7 +1,7 @@
 "use client"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Car, CarFront, Calendar, Home, User, Wallet } from "lucide-react"
+import { Car, CarFront, Calendar, Home, Route, User, Users, Wallet } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const passengerNavItems = [
@@ -19,9 +19,23 @@ const driverNavItems = [
   { href: "/dashboard/profile", label: "Profile", icon: User, exact: false },
 ];
 
-export function Sidebar({ role }: { role: "passenger" | "driver" }) {
+const adminNavItems = [
+  { href: "/dashboard", label: "Overview", icon: Home, exact: true },
+  { href: "/dashboard/admin/users", label: "Users", icon: Users, exact: false },
+  { href: "/dashboard/admin/vehicles", label: "Vehicles", icon: CarFront, exact: false },
+  { href: "/dashboard/admin/journeys", label: "Journeys", icon: Route, exact: false },
+  { href: "/dashboard/admin/bookings", label: "Bookings", icon: Calendar, exact: false },
+  { href: "/dashboard/admin/payments", label: "Payments", icon: Wallet, exact: false },
+];
+
+export function Sidebar({ role }: { role: "passenger" | "driver" | "super_admin" }) {
   const pathname = usePathname()
-  const navItems = role === "driver" ? driverNavItems : passengerNavItems;
+  const navItems =
+    role === "driver"
+      ? driverNavItems
+      : role === "super_admin"
+        ? adminNavItems
+        : passengerNavItems;
 
   return (
     <div className="flex h-full flex-col border-r bg-background w-full">

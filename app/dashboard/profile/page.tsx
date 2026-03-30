@@ -18,6 +18,7 @@ import { CheckCircle2, AlertCircle, CarFront, MapPin } from "lucide-react";
 import { signOutUser } from "@/app/(auth)/actions";
 import { FileUploadField } from "@/components/uploadthing/file-upload-field";
 import { updateProfileAction, submitVerificationAction } from "./actions";
+import { getUserRole } from "@/lib/auth/roles";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/theme-toggle";
 
@@ -32,6 +33,7 @@ export default async function ProfilePage() {
 
   if (!user) redirect("/login");
 
+  const role = await getUserRole(user.id);
   const verificationSubmitted = Boolean(user.idPhoto && user.selfiePhoto && !user.verified);
 
   return (
@@ -115,88 +117,94 @@ export default async function ProfilePage() {
           <CardDescription>Customize your default experience.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="space-y-3">
-            <Label className="text-sm font-bold">Default Dashboard Mode</Label>
-            <div className="grid grid-cols-2 gap-4">
-              <form action={updateProfileAction} className="col-span-1">
-                <input type="hidden" name="name" defaultValue={user.name || ""} />
-                <input type="hidden" name="phone" defaultValue={user.phone || ""} />
-                <SubmitButton
-                  name="defaultRole"
-                  value="passenger"
-                  type="submit"
-                  pendingText="Saving..."
-                  className={cn(
-                    "h-auto w-full flex-col gap-3 rounded-2xl border-2 px-6 py-6 transition-all",
-                    user.defaultRole === "passenger"
-                      ? "border-primary bg-primary/5 text-primary shadow-sm hover:bg-primary/5"
-                      : "border-border/50 bg-background text-muted-foreground hover:border-primary/30 hover:bg-background",
-                  )}
-                >
-                  <MapPin
-                    className={cn(
-                      "w-6 h-6",
-                      user.defaultRole === "passenger"
-                        ? "text-primary"
-                        : "text-muted-foreground",
-                    )}
-                  />
-                  <span
-                    className={cn(
-                      "font-bold",
-                      user.defaultRole === "passenger"
-                        ? "text-primary"
-                        : "text-muted-foreground",
-                    )}
-                  >
-                    Passenger
-                  </span>
-                  {user.defaultRole === "passenger" && (
-                    <CheckCircle2 className="w-4 h-4 text-primary mt-1" />
-                  )}
-                </SubmitButton>
-              </form>
-
-              <form action={updateProfileAction} className="col-span-1">
-                <input type="hidden" name="name" defaultValue={user.name || ""} />
-                <input type="hidden" name="phone" defaultValue={user.phone || ""} />
-                <SubmitButton
-                  name="defaultRole"
-                  value="driver"
-                  type="submit"
-                  pendingText="Saving..."
-                  className={cn(
-                    "h-auto w-full flex-col gap-3 rounded-2xl border-2 px-6 py-6 transition-all",
-                    user.defaultRole === "driver"
-                      ? "border-secondary bg-secondary/5 text-secondary shadow-sm hover:bg-secondary/5"
-                      : "border-border/50 bg-background text-muted-foreground hover:border-secondary/30 hover:bg-background",
-                  )}
-                >
-                  <CarFront
-                    className={cn(
-                      "w-6 h-6",
-                      user.defaultRole === "driver"
-                        ? "text-secondary"
-                        : "text-muted-foreground",
-                    )}
-                  />
-                  <span
-                    className={cn(
-                      "font-bold",
-                      user.defaultRole === "driver"
-                        ? "text-secondary"
-                        : "text-muted-foreground",
-                    )}
-                  >
-                    Driver
-                  </span>
-                  {user.defaultRole === "driver" && (
-                    <CheckCircle2 className="w-4 h-4 text-secondary mt-1" />
-                  )}
-                </SubmitButton>
-              </form>
+          {role === "super_admin" ? (
+            <div className="rounded-[1.5rem] border border-primary/20 bg-primary/5 p-5 text-sm font-medium text-primary">
+              Super admin access is controlled separately from the passenger and driver dashboard modes, so role switching is disabled for this account.
             </div>
-          </div>
+          ) : (
+            <div className="space-y-3">
+              <Label className="text-sm font-bold">Default Dashboard Mode</Label>
+              <div className="grid grid-cols-2 gap-4">
+                <form action={updateProfileAction} className="col-span-1">
+                  <input type="hidden" name="name" defaultValue={user.name || ""} />
+                  <input type="hidden" name="phone" defaultValue={user.phone || ""} />
+                  <SubmitButton
+                    name="defaultRole"
+                    value="passenger"
+                    type="submit"
+                    pendingText="Saving..."
+                    className={cn(
+                      "h-auto w-full flex-col gap-3 rounded-2xl border-2 px-6 py-6 transition-all",
+                      user.defaultRole === "passenger"
+                        ? "border-primary bg-primary/5 text-primary shadow-sm hover:bg-primary/5"
+                        : "border-border/50 bg-background text-muted-foreground hover:border-primary/30 hover:bg-background",
+                    )}
+                  >
+                    <MapPin
+                      className={cn(
+                        "w-6 h-6",
+                        user.defaultRole === "passenger"
+                          ? "text-primary"
+                          : "text-muted-foreground",
+                      )}
+                    />
+                    <span
+                      className={cn(
+                        "font-bold",
+                        user.defaultRole === "passenger"
+                          ? "text-primary"
+                          : "text-muted-foreground",
+                      )}
+                    >
+                      Passenger
+                    </span>
+                    {user.defaultRole === "passenger" && (
+                      <CheckCircle2 className="w-4 h-4 text-primary mt-1" />
+                    )}
+                  </SubmitButton>
+                </form>
+
+                <form action={updateProfileAction} className="col-span-1">
+                  <input type="hidden" name="name" defaultValue={user.name || ""} />
+                  <input type="hidden" name="phone" defaultValue={user.phone || ""} />
+                  <SubmitButton
+                    name="defaultRole"
+                    value="driver"
+                    type="submit"
+                    pendingText="Saving..."
+                    className={cn(
+                      "h-auto w-full flex-col gap-3 rounded-2xl border-2 px-6 py-6 transition-all",
+                      user.defaultRole === "driver"
+                        ? "border-secondary bg-secondary/5 text-secondary shadow-sm hover:bg-secondary/5"
+                        : "border-border/50 bg-background text-muted-foreground hover:border-secondary/30 hover:bg-background",
+                    )}
+                  >
+                    <CarFront
+                      className={cn(
+                        "w-6 h-6",
+                        user.defaultRole === "driver"
+                          ? "text-secondary"
+                          : "text-muted-foreground",
+                      )}
+                    />
+                    <span
+                      className={cn(
+                        "font-bold",
+                        user.defaultRole === "driver"
+                          ? "text-secondary"
+                          : "text-muted-foreground",
+                      )}
+                    >
+                      Driver
+                    </span>
+                    {user.defaultRole === "driver" && (
+                      <CheckCircle2 className="w-4 h-4 text-secondary mt-1" />
+                    )}
+                  </SubmitButton>
+                </form>
+              </div>
+            </div>
+          )}
           <div className="space-y-3 pt-6 border-t border-border/40">
             <div className="flex items-center justify-between">
               <div>

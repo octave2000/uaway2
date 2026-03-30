@@ -1,6 +1,7 @@
 import { db } from "@/db";
-import { bookings, cars, journeys, payoutRequests, users } from "@/db/schema";
-import { eq, desc, and, ne, count } from "drizzle-orm";
+import { bookings, cars, journeys, payments, payoutRequests, users } from "@/db/schema";
+import { eq, desc, and, ne, count, isNotNull } from "drizzle-orm";
+import { AdminDashboard } from "@/components/dashboard/admin-dashboard";
 import { OnboardingGate } from "@/components/dashboard/onboarding-gate";
 import { PassengerDashboard } from "@/components/dashboard/passenger-dashboard";
 import { DriverDashboard } from "@/components/dashboard/driver-dashboard";
@@ -14,6 +15,93 @@ export default async function DashboardHome() {
 
   if (!role) {
     return <OnboardingGate />;
+  }
+
+  if (role === "super_admin") {
+    const [
+      totalUsersResult,
+      activeJourneysResult,
+      totalBookingsResult,
+      successfulPaymentsResult,
+      pendingPayoutRequestsResult,
+      pendingUsers,
+      pendingVehicles,
+      recentPayments,
+    ] = await Promise.all([
+      db.select({ count: count() }).from(users),
+      db
+        .select({ count: count() })
+        .from(journeys)
+        .where(eq(journeys.status, "active")),
+      db.select({ count: count() }).from(bookings),
+      db
+        .select({ amount: payments.amount })
+        .from(payments)
+        .where(eq(payments.status, "success")),
+      db
+        .select({ count: count() })
+        .from(payoutRequests)
+        .where(eq(payoutRequests.status, "pending")),
+      db
+        .select({
+          id: users.id,
+          name: users.name,
+          email: users.email,
+        })
+        .from(users)
+        .where(
+          and(
+            eq(users.verified, false),
+            isNotNull(users.idPhoto),
+            isNotNull(users.selfiePhoto),
+          ),
+        )
+        .limit(4),
+      db
+        .select({
+          id: cars.id,
+          name: cars.name,
+          plateNumber: cars.plateNumber,
+          driverName: users.name,
+        })
+        .from(cars)
+        .innerJoin(users, eq(cars.driverId, users.id))
+        .where(and(eq(cars.verified, false), isNotNull(cars.documentPhoto)))
+        .limit(4),
+      db
+        .select({
+          id: payments.id,
+          amount: payments.amount,
+          status: payments.status,
+          passengerName: users.name,
+          origin: journeys.origin,
+          destination: journeys.destination,
+        })
+        .from(payments)
+        .innerJoin(bookings, eq(payments.bookingId, bookings.id))
+        .innerJoin(journeys, eq(bookings.journeyId, journeys.id))
+        .innerJoin(users, eq(bookings.clientId, users.id))
+        .orderBy(desc(payments.createdAt))
+        .limit(3),
+    ]);
+
+    return (
+      <AdminDashboard
+        userName={name || "Admin"}
+        stats={{
+          totalUsers: totalUsersResult[0]?.count ?? 0,
+          activeJourneys: activeJourneysResult[0]?.count ?? 0,
+          totalBookings: totalBookingsResult[0]?.count ?? 0,
+          successfulPayments: successfulPaymentsResult.reduce((sum, row) => sum + row.amount, 0),
+          pendingIdentityReviews: pendingUsers.length,
+          pendingVehicleReviews: pendingVehicles.length,
+          pendingPayoutRequests: pendingPayoutRequestsResult[0]?.count ?? 0,
+        }}
+        pendingUsers={pendingUsers}
+        pendingVehicles={pendingVehicles}
+        recentPayments={recentPayments}
+      />
+    );
   }
 
   // Fetch role-specific data

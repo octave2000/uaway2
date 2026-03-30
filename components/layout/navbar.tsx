@@ -11,7 +11,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
-type NavbarRole = "passenger" | "driver" | null;
+type NavbarRole = "passenger" | "driver" | "super_admin" | null;
 
 export function Navbar({
   session,
@@ -31,7 +31,12 @@ export function Navbar({
   }, []);
 
   const navLinks =
-    role === "driver"
+    role === "super_admin"
+      ? [
+          { href: "/dashboard/admin/users", label: "Users" },
+          { href: "/dashboard/admin/payments", label: "Payments" },
+        ]
+      : role === "driver"
       ? [
           { href: "/dashboard/journeys", label: "Driver Journeys" },
           { href: "/dashboard/payments", label: "Payments" },

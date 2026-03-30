@@ -6,7 +6,7 @@ export function DashboardLayout({
   role,
 }: {
   children: React.ReactNode;
-  role: "passenger" | "driver";
+  role: "passenger" | "driver" | "super_admin";
 }) {
   return (
     <div className="flex min-h-screen bg-background relative overflow-hidden">
