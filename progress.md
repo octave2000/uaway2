@@ -1,5 +1,15 @@
 # Progress
 
+## 2026-03-30 Super Admin Dashboard
+- [x] Added a real `super_admin` role path on top of the existing passenger and driver model
+- [x] Added configured super-admin email support through `SUPER_ADMIN_EMAILS`
+- [x] Updated the dashboard shell and public navbar to recognize super-admin navigation
+- [x] Built a responsive super-admin overview on `/dashboard` with platform-wide metrics and review queues
+- [x] Added dedicated super-admin pages for users, vehicles, journeys, bookings, and payments
+- [x] Added super-admin actions for manual user verification, vehicle verification, and payout request status management
+- [x] Hid standard passenger/driver dashboard mode switching for super-admin accounts
+- [x] Verified the full admin build with lint and typecheck
+
 ## 2026-03-18 Hardening Pass
 - [x] Removed departed rides from public and passenger discovery flows and blocked stale bookings at action level
 - [x] Added journey notes and redirected drivers straight into the journey management page after posting
@@ -47,3 +57,4 @@
   - `d58b673` `fix: exclude failed payments from journey totals`
   - `562e1c0` `fix: keep verified car document uploads accessible`
   - `96bb596` `refactor: simplify shared route loading state`
+  - `4d9f4a6` `feat: add super admin dashboard and controls`

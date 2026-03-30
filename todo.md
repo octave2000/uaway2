@@ -1,6 +1,9 @@
 # TODO
 
 ## Current Status
+- [x] Add a real super-admin role with guarded dashboard access
+- [x] Build responsive super-admin views for users, vehicles, journeys, bookings, and payments
+- [x] Add operational admin controls for user verification, vehicle verification, and payout-request management
 - [x] Exclude failed payments from driver journey collection totals and failed amount highlights
 - [x] Keep verified vehicle document replacement visible and understandable in the vehicle manager
 - [x] Simplify the shared loading state so it fills the route area cleanly across public, auth, and dashboard pages
