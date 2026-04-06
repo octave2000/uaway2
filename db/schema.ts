@@ -130,7 +130,7 @@ export const payments = pgTable("payments", {
   amount: integer("amount").notNull(),
   status: text("status", { enum: ["pending", "success", "failed", "refunded"] }).default("pending").notNull(),
   currency: text("currency").default("KES").notNull(),
-  provider: text("provider").default("flutterwave").notNull(),
+  provider: text("provider").default("daraja").notNull(),
   paymentMethod: text("payment_method").default("mpesa").notNull(),
   phoneNumber: text("phone_number"),
   txRef: text("tx_ref"),

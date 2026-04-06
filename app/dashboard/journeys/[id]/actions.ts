@@ -6,10 +6,10 @@ import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { bookings, journeys, payments, users } from "@/db/schema";
 import { requireRole } from "@/lib/auth/roles";
-import { createMpesaCharge, normalizeMpesaPhoneNumber } from "@/lib/payments/flutterwave";
+import { createDarajaStkPush, normalizeMpesaPhoneNumber } from "@/lib/payments/daraja";
 
 export async function bookJourneyAction(formData: FormData) {
-  const { userId, email, name } = await requireRole("passenger");
+  const { userId, email } = await requireRole("passenger");
 
   const journeyId = formData.get("journeyId") as string;
   const seatsBooked = parseInt(formData.get("seatsBooked") as string, 10);
@@ -100,7 +100,7 @@ export async function bookJourneyAction(formData: FormData) {
       bookingId: newBooking.id,
       amount: totalAmount,
       currency: "KES",
-      provider: "flutterwave",
+      provider: "daraja",
       paymentMethod: "mpesa",
       phoneNumber: normalizedPhone,
       txRef,
@@ -110,28 +110,23 @@ export async function bookJourneyAction(formData: FormData) {
     .returning({ id: payments.id });
 
   try {
-    const charge = await createMpesaCharge({
+    const charge = await createDarajaStkPush({
       amount: totalAmount,
-      email,
-      fullname: name || email,
       phoneNumber: normalizedPhone,
-      txRef,
-      meta: {
-        bookingId: newBooking.id,
-        paymentId: newPayment.id,
-        journeyId: journey.id,
-      },
+      accountReference: bookingCode,
+      transactionDesc: `${journey.origin} to ${journey.destination}`,
     });
 
     await db
       .update(payments)
       .set({
-        providerTransactionId: String(charge.id),
-        providerStatus: charge.status,
-        reference: charge.flw_ref,
+        providerTransactionId: charge.CheckoutRequestID,
+        providerStatus: charge.ResponseDescription,
+        checkoutUrl: charge.MerchantRequestID,
       })
       .where(eq(payments.id, newPayment.id));
-  } catch {
+  } catch (error) {
+    console.error("Daraja payment initiation failed.", error);
     await db
       .update(bookings)
       .set({ status: "cancelled" })

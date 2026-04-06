@@ -130,27 +130,27 @@ async function seed() {
         provider_transaction_id, provider_status, checkout_url, reference, paid_at, verified_at, created_at
       ) values
         (
-          ${confirmedPaymentId}, ${confirmedBookingId}, 1800, 'success', 'KES', 'flutterwave', 'mpesa',
+          ${confirmedPaymentId}, ${confirmedBookingId}, 1800, 'success', 'KES', 'daraja', 'mpesa',
           '254711000003', 'seed-start-txref', '100001', 'successful', null, 'FLW-START-001',
           ${hoursAgo(1)}, ${hoursAgo(1)}, ${hoursAgo(1)}
         ),
         (
-          ${ongoingPaymentId}, ${ongoingBookingId}, 2200, 'success', 'KES', 'flutterwave', 'mpesa',
+          ${ongoingPaymentId}, ${ongoingBookingId}, 2200, 'success', 'KES', 'daraja', 'mpesa',
           '254711000004', 'seed-advance-txref', '100002', 'successful', null, 'FLW-ADV-002',
           ${hoursAgo(2)}, ${hoursAgo(2)}, ${hoursAgo(2)}
         ),
         (
-          ${completedPaymentId}, ${completedBookingId}, 7000, 'success', 'KES', 'flutterwave', 'mpesa',
+          ${completedPaymentId}, ${completedBookingId}, 7000, 'success', 'KES', 'daraja', 'mpesa',
           '254711000005', 'seed-standard-txref', '100003', 'successful', null, 'FLW-STD-003',
           ${hoursAgo(8)}, ${hoursAgo(8)}, ${hoursAgo(8)}
         ),
         (
-          ${pendingPaymentId}, ${pendingBookingId}, 2000, 'pending', 'KES', 'flutterwave', 'mpesa',
+          ${pendingPaymentId}, ${pendingBookingId}, 2000, 'pending', 'KES', 'daraja', 'mpesa',
           '254711000003', 'seed-pending-txref', '100004', 'pending', null, 'FLW-PEND-004',
           null, null, ${hoursAgo(0.5)}
         ),
         (
-          ${failedPaymentId}, ${failedBookingId}, 1600, 'failed', 'KES', 'flutterwave', 'mpesa',
+          ${failedPaymentId}, ${failedBookingId}, 1600, 'failed', 'KES', 'daraja', 'mpesa',
           '254711000004', 'seed-failed-txref', '100005', 'failed', null, 'FLW-FAIL-005',
           null, ${hoursAgo(0.2)}, ${hoursAgo(0.25)}
         )

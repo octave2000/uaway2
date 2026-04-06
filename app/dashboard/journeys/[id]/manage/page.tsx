@@ -43,7 +43,13 @@ export default async function ManageJourneyPage(props: { params: Promise<{ id: s
     .where(eq(bookings.journeyId, params.id))
     .orderBy(desc(bookings.createdAt));
 
-  const bookingIds = journeyBookings.map((bookingRecord) => bookingRecord.booking.id);
+  const visibleBookings = journeyBookings.filter(
+    (bookingRecord) =>
+      bookingRecord.booking.status !== "payment_failed" &&
+      bookingRecord.payment.status !== "failed",
+  );
+
+  const bookingIds = visibleBookings.map((bookingRecord) => bookingRecord.booking.id);
   const advanceRequests = bookingIds.length
     ? await db
         .select()
@@ -95,7 +101,7 @@ export default async function ManageJourneyPage(props: { params: Promise<{ id: s
               <Users className="h-4 w-4 text-primary" />
               Passengers
             </div>
-            <div className="text-4xl font-black text-foreground">{journeyBookings.length}</div>
+            <div className="text-4xl font-black text-foreground">{visibleBookings.length}</div>
           </CardContent>
         </Card>
         <Card className="rounded-[2rem] border-border/60 bg-card/90 shadow-sm">
@@ -130,13 +136,13 @@ export default async function ManageJourneyPage(props: { params: Promise<{ id: s
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {journeyBookings.length === 0 ? (
+            {visibleBookings.length === 0 ? (
               <div className="rounded-[1.5rem] border border-dashed border-border/60 bg-muted/10 p-8 text-center text-sm font-medium text-muted-foreground">
                 No passenger bookings yet.
               </div>
             ) : (
               <div className="flex flex-col gap-4">
-                {journeyBookings.map((bookingRecord) => (
+                {visibleBookings.map((bookingRecord) => (
                   <div
                     key={bookingRecord.booking.id}
                     className="flex flex-col gap-4 rounded-[1.5rem] border border-border/50 bg-background/70 p-4 md:flex-row md:items-center md:justify-between"

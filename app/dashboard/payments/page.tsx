@@ -82,7 +82,11 @@ export default async function PaymentsPage() {
     }
   }
 
-  const totals = paymentRows.reduce(
+  const visiblePayments = paymentRows.filter(
+    (row) => row.payment.status === "pending" || row.payment.status === "success",
+  );
+
+  const totals = visiblePayments.reduce(
     (acc, row) => {
       const paidAt = toTime(row.payment.paidAt) || toTime(row.payment.createdAt);
       const currentTime = toTime(row.currentTime);
@@ -103,7 +107,7 @@ export default async function PaymentsPage() {
 
       return acc;
     },
-    { collected: 0, ready: 0, locked: 0 },
+      { collected: 0, ready: 0, locked: 0 },
   );
 
   return (
@@ -165,7 +169,7 @@ export default async function PaymentsPage() {
         </Card>
       </div>
 
-      {paymentRows.length === 0 ? (
+      {visiblePayments.length === 0 ? (
         <Card className="rounded-[2rem] border-dashed border-border/60 bg-muted/10 p-10 text-center">
           <CardTitle className="mb-3 text-2xl font-black">No payment activity yet</CardTitle>
           <CardDescription className="mx-auto mb-6 max-w-md text-sm font-medium">
@@ -177,7 +181,7 @@ export default async function PaymentsPage() {
         </Card>
       ) : (
         <div className="grid gap-4">
-          {paymentRows.map((row) => {
+          {visiblePayments.map((row) => {
             const latestRequest = latestRequestByPaymentId.get(row.payment.id);
             const paidAt = toTime(row.payment.paidAt) || toTime(row.payment.createdAt);
             const currentTime = toTime(row.currentTime);

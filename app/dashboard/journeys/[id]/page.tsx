@@ -105,7 +105,7 @@ export default async function JourneyDetailsPage(props: JourneyDetailsPageProps)
       {paymentError === "payment_failed" ? (
         <Card className="rounded-[2rem] border border-rose-500/20 bg-rose-500/10 p-6">
           <div className="text-sm font-medium text-rose-700 dark:text-rose-400">
-            We could not initialize the Flutterwave M-Pesa payment. That failed attempt was cancelled, so you can correct the phone number and try again.
+            We could not initialize the Daraja M-Pesa payment. That failed attempt was cancelled, so you can correct the phone number and try again.
           </div>
         </Card>
       ) : null}
@@ -264,7 +264,7 @@ export default async function JourneyDetailsPage(props: JourneyDetailsPageProps)
                 <div className="flex items-start gap-3 rounded-[1.5rem] border border-secondary/20 bg-secondary/10 p-4">
                   <Info className="mt-0.5 h-5 w-5 shrink-0 text-secondary" />
                   <div className="text-sm text-secondary-foreground">
-                    Booking now creates a pending Flutterwave M-Pesa charge. Your seat is confirmed only after payment verification succeeds.
+                    Booking now creates a pending Daraja M-Pesa charge. Your seat is confirmed only after payment verification succeeds.
                   </div>
                 </div>
                 {journeyData.journey.seatsAvailable > 0 ? (

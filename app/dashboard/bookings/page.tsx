@@ -22,6 +22,7 @@ import {
   requestRideStartAction,
   submitReviewAction,
 } from "./actions";
+import { PaymentStatusButton } from "./_components/payment-status-button";
 
 type BookingsPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -70,7 +71,11 @@ export default async function BookingsPage({ searchParams }: BookingsPageProps) 
     .where(eq(reviews.clientId, userId));
 
   const reviewedJourneyIds = new Set(userReviews.map((review) => review.journeyId));
-  const bookingIds = userBookings.map((item) => item.booking.id);
+  const visibleBookings = userBookings.filter(
+    (item) => item.booking.status !== "payment_failed" && item.payment.status !== "failed",
+  );
+
+  const bookingIds = visibleBookings.map((item) => item.booking.id);
 
   const advanceRequests = bookingIds.length
     ? await db
@@ -89,6 +94,8 @@ export default async function BookingsPage({ searchParams }: BookingsPageProps) 
   }
 
   const notice = typeof params.notice === "string" ? params.notice : null;
+  const error = typeof params.error === "string" ? params.error : null;
+  const rateLimited = error === "rate_limited";
 
   return (
     <div className="mx-auto mb-20 flex w-full max-w-5xl flex-col gap-6 px-4 py-6 md:mb-0 md:gap-8 md:px-8 md:py-8">
@@ -118,7 +125,35 @@ export default async function BookingsPage({ searchParams }: BookingsPageProps) 
         </Card>
       ) : null}
 
-      {userBookings.length === 0 ? (
+      {error === "rate_limited" ? (
+        <Card className="rounded-[2rem] border border-amber-500/20 bg-amber-500/10 p-6">
+          <div className="flex items-start gap-3 text-amber-700 dark:text-amber-400">
+            <Clock3 className="mt-0.5 h-5 w-5 shrink-0" />
+            <div className="space-y-1">
+              <div className="font-black uppercase tracking-[0.18em] text-xs">Rate limit hit</div>
+              <div className="text-sm font-medium">
+                Daraja limits status checks. Please wait about one minute before trying again.
+              </div>
+            </div>
+          </div>
+        </Card>
+      ) : null}
+
+      {error === "query_failed" ? (
+        <Card className="rounded-[2rem] border border-rose-500/20 bg-rose-500/10 p-6">
+          <div className="flex items-start gap-3 text-rose-700 dark:text-rose-400">
+            <Clock3 className="mt-0.5 h-5 w-5 shrink-0" />
+            <div className="space-y-1">
+              <div className="font-black uppercase tracking-[0.18em] text-xs">Status check failed</div>
+              <div className="text-sm font-medium">
+                We could not reach M-Pesa for a status update. Please wait a moment and try again.
+              </div>
+            </div>
+          </div>
+        </Card>
+      ) : null}
+
+      {visibleBookings.length === 0 ? (
         <Card className="mt-4 flex flex-col items-center justify-center rounded-[2rem] border-dashed bg-muted/20 p-12 text-center">
           <CardTitle className="mb-3 text-2xl font-black">No bookings yet</CardTitle>
           <CardDescription className="mb-6 max-w-md text-sm font-medium">
@@ -130,7 +165,7 @@ export default async function BookingsPage({ searchParams }: BookingsPageProps) 
         </Card>
       ) : (
         <div className="flex flex-col gap-6">
-          {userBookings.map((data) => {
+          {visibleBookings.map((data) => {
             const latestAdvanceRequest = latestAdvanceRequestByBookingId.get(data.booking.id);
             const isReviewed = reviewedJourneyIds.has(data.journey.id);
             const isCompleted = data.journey.status === "completed";
@@ -219,13 +254,14 @@ export default async function BookingsPage({ searchParams }: BookingsPageProps) 
                         </div>
                         <form action={checkPaymentStatusAction}>
                           <input type="hidden" name="bookingId" value={data.booking.id} />
-                          <SubmitButton
-                            type="submit"
+                          <PaymentStatusButton
+                            paymentId={data.payment.id}
                             className="rounded-2xl font-black uppercase tracking-[0.18em]"
                             pendingText="Checking..."
+                            rateLimited={rateLimited}
                           >
                             Check payment status
-                          </SubmitButton>
+                          </PaymentStatusButton>
                         </form>
                       </div>
                     ) : null}

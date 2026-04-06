@@ -7,8 +7,8 @@ import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { bookings, journeys, payoutRequests, reviews, payments } from "@/db/schema";
 import { requireRole } from "@/lib/auth/roles";
-import { syncFlutterwavePayment } from "@/lib/payments/service";
-import { verifyFlutterwaveTransaction } from "@/lib/payments/flutterwave";
+import { syncDarajaPaymentFromQuery } from "@/lib/payments/service";
+import { DarajaApiError, queryDarajaStkPush } from "@/lib/payments/daraja";
 
 function revalidateBookingSurfaces(journeyId?: string) {
   revalidatePath("/dashboard");
@@ -43,10 +43,16 @@ export async function checkPaymentStatusAction(formData: FormData) {
     redirect("/dashboard/bookings");
   }
 
-  const verification = await verifyFlutterwaveTransaction(
-    bookingRecord.payment.providerTransactionId,
-  );
-  await syncFlutterwavePayment(verification);
+  try {
+    const verification = await queryDarajaStkPush(bookingRecord.payment.providerTransactionId);
+    await syncDarajaPaymentFromQuery(verification);
+  } catch (error) {
+    console.error("Daraja STK query failed.", error);
+    if (error instanceof DarajaApiError && error.status === 429) {
+      redirect(`/dashboard/bookings?notice=payment_pending&error=rate_limited`);
+    }
+    redirect(`/dashboard/bookings?notice=payment_pending&error=query_failed`);
+  }
 
   revalidateBookingSurfaces(bookingRecord.booking.journeyId);
   redirect("/dashboard/bookings");
