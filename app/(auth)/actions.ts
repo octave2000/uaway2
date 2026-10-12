@@ -1,5 +1,6 @@
 "use server";
 
+import { limit } from "@/lib/domain/shared";
 import { hash } from "bcryptjs";
 import { redirect } from "next/navigation";
 
@@ -36,9 +37,7 @@ export async function signInWithCredentials(formData: FormData): Promise<void> {
   });
 
   if (!parsedCredentials.success) {
-    redirect(
-      withRedirectParam(`/login?error=invalid_fields`, redirectTo),
-    );
+    redirect(withRedirectParam(`/login?error=invalid_fields`, redirectTo));
   }
 
   await signIn("credentials", {
@@ -55,9 +54,7 @@ export async function sendMagicLink(formData: FormData): Promise<void> {
   });
 
   if (!parsedEmail.success) {
-    redirect(
-      withRedirectParam(`/login?error=invalid_fields`, redirectTo),
-    );
+    redirect(withRedirectParam(`/login?error=invalid_fields`, redirectTo));
   }
 
   await signIn("email", {
@@ -75,12 +72,11 @@ export async function registerWithPassword(formData: FormData): Promise<void> {
   });
 
   if (!parsedRegistration.success) {
-    redirect(
-      withRedirectParam(`/register?error=invalid_fields`, redirectTo),
-    );
+    redirect(withRedirectParam(`/register?error=invalid_fields`, redirectTo));
   }
 
   try {
+    await limit(`register:${parsedRegistration.data.email}`, 3, 3600000);
     const passwordHash = await hash(parsedRegistration.data.password, 12);
 
     await createCredentialsUser({
@@ -90,9 +86,7 @@ export async function registerWithPassword(formData: FormData): Promise<void> {
     });
   } catch (error) {
     if (error instanceof UserAlreadyExistsError) {
-      redirect(
-        withRedirectParam(`/register?error=account_exists`, redirectTo),
-      );
+      redirect(withRedirectParam(`/register?error=account_exists`, redirectTo));
     }
 
     throw error;

@@ -1,120 +1,43 @@
-# Uaway Starter
+# Uaway
 
-Minimal Next.js starter kit with Auth.js v5, Drizzle ORM, Postgres, Google OAuth, email/password auth, and magic links sent through HubMail.
+Scheduled carpooling for Kenya: public discovery, verified passengers and drivers, approved vehicles, seat reservations, M-Pesa collections, individual boarding/arrival, support, refunds, and independently reconciled payouts.
 
-## Included
+## Run locally
 
-- Google sign-in
-- Email/password registration and login
-- Magic link login through HubMail
-- Drizzle schema and migrations under `db/`
-- Auth.js config in root `auth.ts`
-- Minimal shadcn-style auth UI
-- Protected dashboard route through `proxy.ts`
+Use Node 24+ and npm. Copy `.env.example` to `.env` and configure your development providers. Start PostgreSQL (`docker compose up -d db`), then:
 
-## Stack
-
-- Next.js 16 App Router
-- Auth.js v5
-- Drizzle ORM
-- Postgres via `postgres`
-- HubMail
-- Zod
-- shadcn-style UI components
-
-## Project Structure
-
-```text
-app/
-  (auth)/
-    actions.ts
-    helpers.ts
-    login/page.tsx
-    register/page.tsx
-    schemas.ts
-  api/auth/[...nextauth]/route.ts
-  dashboard/page.tsx
-  page.tsx
-auth.ts
-db/
-  drizzle.config.ts
-  index.ts
-  migrations/
-  schema.ts
-  users.ts
-proxy.ts
+```sh
+npm ci
+npm run db:migrate
+npm run dev
+# In another terminal:
+npm run worker
 ```
 
-## Auth Notes
+Local Compose database URL: `postgres://uaway:local-development-only@localhost:5432/uaway`.
 
-- `auth.ts` contains the Auth.js configuration, providers, callbacks, and adapter wiring.
-- Database-related code lives under `db/`.
-- Credentials auth uses JWT sessions because Auth.js credentials support requires it.
-- Users, linked OAuth accounts, and magic-link verification tokens are stored in Postgres.
-- Routes stay at `/login` and `/register`, even though the pages live under `app/(auth)/`.
+## Architecture
 
-## Environment Variables
+- `app/`: server-rendered screens, thin mutation actions, provider/status routes.
+- `lib/domain/`: reservations, journeys, vehicles, ride progress, settlement, policies, and shared transaction helpers.
+- `lib/payments/`: Daraja adapter and authenticated reconciliation.
+- `lib/auth/`: authorization, MFA, account verification/recovery.
+- `db/`: typed schema and versioned non-destructive migrations.
+- `worker/`: durable scheduled payment reconciliation, reservation expiry, reminders, exceptions, and email.
 
-Copy `.env.example` to `.env` and set:
+PostgreSQL is the source of truth. Reservations use row locks; side effects use transactionally written events; money is recorded in minor units with immutable debit/credit entries. Administrative permission is separate from the passenger/driver interface preference.
 
-```bash
-AUTH_SECRET=
-AUTH_GOOGLE_ID=
-AUTH_GOOGLE_SECRET=
-AUTH_EMAIL_FROM=
-DATABASE_URL=
-HUBMAIL_KEY=
-DARAJA_CONSUMER_KEY=
-DARAJA_CONSUMER_SECRET=
-DARAJA_SHORTCODE=
-DARAJA_PASSKEY=
-DARAJA_CALLBACK_URL=
-DARAJA_BASE_URL=
+## Verify
+
+```sh
+npm run lint
+npm run typecheck
+npm test
+npm run build
+npx playwright install chromium
+npm run test:e2e
 ```
 
-## Google OAuth Setup
+Integration tests create an isolated temporary PostgreSQL cluster. Alternatively set `TEST_DATABASE_URL` to a database whose name contains `test`. They never use your ordinary DATABASE_URL for test writes. Browser tests need a migrated development/test database and build-time/runtime auth environment. CI provisions its own database.
 
-Use this callback URL in Google Cloud:
-
-```text
-http://localhost:3000/api/auth/callback/google
-```
-
-For production, add the matching production callback URL as well.
-
-## Getting Started
-
-```bash
-bun install
-bun run db:migrate
-bun dev
-```
-
-Open `http://localhost:3000`.
-
-## Scripts
-
-```bash
-bun dev
-bun run build
-bun run lint
-bun run typecheck
-bun run db:generate
-bun run db:migrate
-bun run db:push
-bun run db:studio
-```
-
-## Starter Routes
-
-- `/` minimal home page
-- `/login` sign in with Google, password, or magic link
-- `/register` register with password or continue with Google
-- `/dashboard` protected example page
-
-## Customizing
-
-- Edit `db/schema.ts` for your data model
-- Edit `db/users.ts` for user-related DB helpers
-- Edit `auth.ts` to add or change providers
-- Replace the pages under `app/` with your product routes
+Read [the operating guide](docs/OPERATIONS.md) before migration or launch. External provider credentials, operator accounts, and sandbox acceptance are required before production launch.
