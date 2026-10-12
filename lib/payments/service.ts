@@ -1,169 +1,257 @@
-import { and, eq, or, sql } from "drizzle-orm";
-
+import { and, eq, lte, inArray, isNotNull } from "drizzle-orm";
 import { db } from "@/db";
-import { bookings, journeys, payments } from "@/db/schema";
 import {
-  type DarajaStkCallback,
+  bookings,
+  payments,
+  ledgerEntries,
+  providerEvents,
+  supportCases,
+} from "@/db/schema";
+import {
+  createDarajaStkPush,
+  queryDarajaStkPush,
   type DarajaStkQueryResponse,
-  getDarajaCallbackMetadataValue,
-} from "@/lib/payments/daraja";
+} from "./daraja";
+import {
+  lockBooking,
+  queueRefund,
+  releaseInventory,
+} from "@/lib/domain/reservations";
+import { paymentOutcome } from "@/lib/domain/policy";
+import { audit, notify } from "@/lib/domain/shared";
 
-type DarajaSyncResult = "success" | "failed" | "missing";
-
-type DarajaNormalizedResult = {
-  checkoutRequestId: string;
-  merchantRequestId?: string;
-  resultCode: number;
-  resultDesc: string;
-  amount?: number;
-  phoneNumber?: string;
-  receipt?: string;
-  transactionDate?: Date | null;
-};
-
-function parseDarajaDate(value?: string | number): Date | null {
-  if (!value) {
-    return null;
-  }
-
-  const raw = String(value);
-  if (!/^\d{14}$/.test(raw)) {
-    return null;
-  }
-
-  const year = Number(raw.slice(0, 4));
-  const month = Number(raw.slice(4, 6));
-  const day = Number(raw.slice(6, 8));
-  const hour = Number(raw.slice(8, 10));
-  const minute = Number(raw.slice(10, 12));
-  const second = Number(raw.slice(12, 14));
-
-  if ([year, month, day, hour, minute, second].some((part) => Number.isNaN(part))) {
-    return null;
-  }
-
-  return new Date(year, month - 1, day, hour, minute, second);
-}
-
-function normalizeDarajaResultFromCallback(
-  callback: DarajaStkCallback,
-): DarajaNormalizedResult {
-  return {
-    checkoutRequestId: callback.CheckoutRequestID,
-    merchantRequestId: callback.MerchantRequestID,
-    resultCode: Number(callback.ResultCode),
-    resultDesc: callback.ResultDesc,
-    amount: Number(getDarajaCallbackMetadataValue(callback, "Amount")),
-    phoneNumber: String(getDarajaCallbackMetadataValue(callback, "PhoneNumber") ?? ""),
-    receipt: String(getDarajaCallbackMetadataValue(callback, "MpesaReceiptNumber") ?? ""),
-    transactionDate: parseDarajaDate(getDarajaCallbackMetadataValue(callback, "TransactionDate")),
-  };
-}
-
-function normalizeDarajaResultFromQuery(
+// Only call with the result of our authenticated provider query, never callback JSON.
+export async function syncDarajaPaymentFromQuery(
   query: DarajaStkQueryResponse,
-): DarajaNormalizedResult {
-  return {
-    checkoutRequestId: query.CheckoutRequestID,
-    merchantRequestId: query.MerchantRequestID,
-    resultCode: Number(query.ResultCode),
-    resultDesc: query.ResultDesc,
-  };
-}
-
-async function syncDarajaPayment(
-  normalized: DarajaNormalizedResult,
-): Promise<DarajaSyncResult> {
-  const matchConditions = [eq(payments.providerTransactionId, normalized.checkoutRequestId)];
-  if (normalized.merchantRequestId) {
-    matchConditions.push(eq(payments.checkoutUrl, normalized.merchantRequestId));
-  }
-
-  const [paymentRecord] = await db
-    .select({
-      payment: payments,
-      booking: bookings,
-    })
+) {
+  const [ref] = await db
+    .select()
     .from(payments)
-    .innerJoin(bookings, eq(payments.bookingId, bookings.id))
-    .where(matchConditions.length === 1 ? matchConditions[0] : or(...matchConditions))
-    .limit(1);
-
-  if (!paymentRecord) {
+    .where(eq(payments.providerTransactionId, query.CheckoutRequestID));
+  if (
+    !ref ||
+    ref.provider !== "daraja" ||
+    ref.checkoutUrl !== query.MerchantRequestID
+  )
     return "missing";
-  }
-
-  const verifiedAt = new Date();
-  const wasSuccessful = normalized.resultCode === 0;
-  const paidAt = wasSuccessful ? normalized.transactionDate ?? verifiedAt : null;
-  const reference =
-    normalized.receipt && normalized.receipt !== "undefined" ? normalized.receipt : undefined;
-
-  await db.transaction(async (tx) => {
+  return db.transaction(async (tx) => {
+    const { booking, journey } = await lockBooking(tx, ref.bookingId);
+    const [payment] = await tx
+      .select()
+      .from(payments)
+      .where(eq(payments.id, ref.id))
+      .for("update");
+    const outcome = paymentOutcome(
+      payment.status,
+      query.ResultCode === undefined ? undefined : Number(query.ResultCode),
+    );
+    if (outcome === "unchanged" || outcome === "pending") return outcome;
+    const now = new Date();
     await tx
       .update(payments)
       .set({
-        status: wasSuccessful ? "success" : "failed",
-        currency: "KES",
-        paymentMethod: "mpesa",
-        phoneNumber: normalized.phoneNumber || paymentRecord.payment.phoneNumber,
-        providerTransactionId: normalized.checkoutRequestId,
-        providerStatus: normalized.resultDesc,
-        reference: reference ?? paymentRecord.payment.reference,
-        checkoutUrl: normalized.merchantRequestId ?? paymentRecord.payment.checkoutUrl,
-        paidAt,
-        verifiedAt,
+        status: outcome,
+        paidAt: outcome === "success" ? now : null,
+        verifiedAt: now,
+        providerStatus: query.ResultDesc,
       })
-      .where(eq(payments.id, paymentRecord.payment.id));
-
-    if (!wasSuccessful) {
+      .where(eq(payments.id, payment.id));
+    if (outcome === "failed") {
+      if (booking.status === "payment_pending") {
+        await releaseInventory(tx, booking);
+        await tx
+          .update(bookings)
+          .set({ status: "payment_failed" })
+          .where(eq(bookings.id, booking.id));
+        await notify(
+          tx,
+          `failed:${payment.id}`,
+          booking.clientId,
+          "Payment not completed",
+          "Your seats have been released. You can start a new booking.",
+          `/dashboard/bookings/${booking.id}`,
+        );
+      }
+      return outcome;
+    }
+    await tx
+      .insert(ledgerEntries)
+      .values({
+        key: `collection:${payment.id}`,
+        paymentId: payment.id,
+        debit: "mpesa_clearing",
+        credit: "passenger_funds",
+        amountMinor: payment.amountMinor,
+      })
+      .onConflictDoNothing();
+    if (
+      booking.status !== "payment_pending" ||
+      !booking.inventoryHeld ||
+      !booking.expiresAt ||
+      booking.expiresAt <= now ||
+      journey.status !== "active" ||
+      journey.departureTime <= now
+    ) {
+      await releaseInventory(tx, booking);
       await tx
         .update(bookings)
-        .set({
-          status: "payment_failed",
-        })
-        .where(eq(bookings.id, paymentRecord.booking.id));
-
-      return;
+        .set({ status: "cancelled" })
+        .where(eq(bookings.id, booking.id));
+      await queueRefund(tx, payment, "Payment arrived after reservation ended");
+      await notify(
+        tx,
+        `late:${payment.id}`,
+        booking.clientId,
+        "Payment received — refund pending",
+        "Your reservation ended before payment was confirmed. Your full payment will be refunded.",
+        `/dashboard/bookings/${booking.id}`,
+      );
+      return "refund_pending";
     }
-
-    if (paymentRecord.booking.status === "confirmed") {
-      return;
-    }
-
     await tx
       .update(bookings)
-      .set({
-        status: "confirmed",
-        confirmedAt: verifiedAt,
-      })
-      .where(eq(bookings.id, paymentRecord.booking.id));
-
-    await tx
-      .update(journeys)
-      .set({
-        seatsAvailable: sql`${journeys.seatsAvailable} - ${paymentRecord.booking.seatsBooked}`,
-        luggageCapacity: sql`${journeys.luggageCapacity} - ${paymentRecord.booking.luggageSpace}`,
-      })
-      .where(
-        and(
-          eq(journeys.id, paymentRecord.booking.journeyId),
-          eq(journeys.status, "active"),
-        ),
-      );
+      .set({ status: "confirmed", confirmedAt: now })
+      .where(eq(bookings.id, booking.id));
+    await notify(
+      tx,
+      `confirmed:${booking.id}`,
+      booking.clientId,
+      "Your ride is booked",
+      "Payment confirmed. Your boarding code and pickup details are ready.",
+      `/dashboard/bookings/${booking.id}`,
+    );
+    await notify(
+      tx,
+      `passenger:${booking.id}`,
+      journey.driverId,
+      "New passenger",
+      "A passenger has booked your journey.",
+      `/dashboard/journeys/${journey.id}/manage`,
+    );
+    await audit(tx, null, "payment.verified", payment.id, {
+      amountMinor: payment.amountMinor,
+      checkoutId: query.CheckoutRequestID,
+    });
+    return outcome;
   });
-
-  return wasSuccessful ? "success" : "failed";
 }
-
-export async function syncDarajaPaymentFromCallback(
-  callback: DarajaStkCallback,
-): Promise<DarajaSyncResult> {
-  return syncDarajaPayment(normalizeDarajaResultFromCallback(callback));
+export async function initiatePayment(paymentId: string) {
+  const claimed = await db.transaction(async (tx) => {
+    const [ref] = await tx
+      .select()
+      .from(payments)
+      .where(eq(payments.id, paymentId));
+    if (!ref) return;
+    const { booking } = await lockBooking(tx, ref.bookingId);
+    const [payment] = await tx
+      .select()
+      .from(payments)
+      .where(eq(payments.id, paymentId))
+      .for("update");
+    if (
+      payment.providerStatus !== "queued" ||
+      booking.status !== "payment_pending" ||
+      !booking.expiresAt ||
+      booking.expiresAt <= new Date()
+    )
+      return;
+    await tx
+      .update(payments)
+      .set({ providerStatus: "initiating" })
+      .where(eq(payments.id, payment.id));
+    return { payment, booking };
+  });
+  if (!claimed) return;
+  try {
+    const charge = await createDarajaStkPush({
+      amount: claimed.payment.amountMinor / 100,
+      phoneNumber: claimed.payment.phoneNumber!,
+      accountReference: claimed.booking.bookingCode,
+      transactionDesc: "Uaway ride booking",
+    });
+    await db
+      .update(payments)
+      .set({
+        providerTransactionId: charge.CheckoutRequestID,
+        checkoutUrl: charge.MerchantRequestID,
+        providerStatus: "awaiting_customer",
+        nextCheckAt: new Date(Date.now() + 15000),
+      })
+      .where(eq(payments.id, paymentId));
+  } catch {
+    // A timeout may mean the provider accepted the charge. Never automatically charge again.
+    await db.transaction(async (tx) => {
+      await tx
+        .update(payments)
+        .set({ providerStatus: "initiation_unknown" })
+        .where(eq(payments.id, paymentId));
+      await tx.insert(supportCases).values({
+        userId: claimed.booking.clientId,
+        bookingId: claimed.booking.id,
+        subject: "Payment initiation needs reconciliation",
+        message: `Payment ${paymentId} has an unknown provider outcome. Check the merchant statement before retrying or refunding.`,
+      });
+      await notify(
+        tx,
+        `unknown:${paymentId}`,
+        claimed.booking.clientId,
+        "Payment needs a check",
+        "We could not confirm the payment request. Please do not pay again until support has checked it.",
+        `/dashboard/bookings/${claimed.booking.id}`,
+      );
+    });
+  }
 }
-
-export async function syncDarajaPaymentFromQuery(
-  query: DarajaStkQueryResponse,
-): Promise<DarajaSyncResult> {
-  return syncDarajaPayment(normalizeDarajaResultFromQuery(query));
+export async function reconcilePayments() {
+  const queued = await db
+    .select()
+    .from(payments)
+    .where(
+      and(
+        eq(payments.status, "pending"),
+        eq(payments.providerStatus, "queued"),
+      ),
+    )
+    .limit(25);
+  for (const payment of queued) await initiatePayment(payment.id);
+  const pending = await db
+    .select()
+    .from(payments)
+    .where(
+      and(
+        inArray(payments.status, ["pending", "failed"]),
+        isNotNull(payments.providerTransactionId),
+        lte(payments.nextCheckAt, new Date()),
+      ),
+    )
+    .limit(50);
+  for (const payment of pending) {
+    if (!payment.providerTransactionId) continue;
+    // Claim a query interval so UI polling and multiple workers cannot hammer Daraja.
+    const [claimed] = await db
+      .update(payments)
+      .set({ nextCheckAt: new Date(Date.now() + 120000) })
+      .where(
+        and(eq(payments.id, payment.id), lte(payments.nextCheckAt, new Date())),
+      )
+      .returning();
+    if (!claimed) continue;
+    try {
+      const result = await queryDarajaStkPush(payment.providerTransactionId);
+      if (result.CheckoutRequestID !== payment.providerTransactionId)
+        throw new Error("Provider reference mismatch");
+      await syncDarajaPaymentFromQuery(result);
+      await db
+        .update(providerEvents)
+        .set({ processedAt: new Date() })
+        .where(eq(providerEvents.checkoutId, result.CheckoutRequestID));
+    } catch {
+      console.error(
+        JSON.stringify({
+          event: "payment.reconciliation_failed",
+          paymentId: payment.id,
+        }),
+      );
+    }
+  }
 }
