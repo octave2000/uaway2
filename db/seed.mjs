@@ -1,199 +1,130 @@
 import "dotenv/config";
-
-import crypto from "node:crypto";
-
+import { randomUUID, createHash } from "node:crypto";
 import { hash } from "bcryptjs";
 import postgres from "postgres";
 
-const databaseUrl = process.env.DATABASE_URL;
+if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is required.");
+const sql = postgres(process.env.DATABASE_URL, {
+  prepare: false,
+  connect_timeout: 10,
+});
+const id = (key) => {
+  const hex = createHash("sha256").update(`uaway-demo-v2:${key}`).digest("hex");
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-a${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
+};
+const at = (hours) => new Date(Date.now() + hours * 3600000);
+const password = "SeedPass123!";
 
-if (!databaseUrl) {
-  throw new Error("DATABASE_URL is required to run the seed script.");
-}
-
-const sql = postgres(databaseUrl, { prepare: false });
-const sampleDomain = "seed.uaway.local";
-
-function createId() {
-  return crypto.randomUUID();
-}
-
-function hoursAgo(hours) {
-  return new Date(Date.now() - hours * 60 * 60 * 1000);
-}
-
-async function seed() {
-  const passwordHash = await hash("SeedPass123!", 10);
-
-  const driverAId = createId();
-  const driverBId = createId();
-  const passengerAId = createId();
-  const passengerBId = createId();
-  const passengerCId = createId();
-
-  const carAId = createId();
-  const carBId = createId();
-  const carCId = createId();
-
-  const activeJourneyId = createId();
-  const ongoingJourneyId = createId();
-  const completedJourneyId = createId();
-  const pendingJourneyId = createId();
-  const failedJourneyId = createId();
-
-  const confirmedBookingId = createId();
-  const ongoingBookingId = createId();
-  const completedBookingId = createId();
-  const pendingBookingId = createId();
-  const failedBookingId = createId();
-
-  const confirmedPaymentId = createId();
-  const ongoingPaymentId = createId();
-  const completedPaymentId = createId();
-  const pendingPaymentId = createId();
-  const failedPaymentId = createId();
-
-  const standardPayoutRequestId = createId();
-  const advancePayoutRequestId = createId();
-  const reviewId = createId();
-
+try {
+  const passwordHash = await hash(password, 12);
   await sql.begin(async (tx) => {
-    await tx`delete from users where email like ${"%" + sampleDomain}`;
-
-    await tx`
-      insert into users (
-        id, name, email, password_hash, verified, phone, default_role, email_verified
-      ) values
-        (${driverAId}, 'Grace Wambui', ${`grace@${sampleDomain}`}, ${passwordHash}, true, '+254711000001', 'driver', now()),
-        (${driverBId}, 'Brian Otieno', ${`brian@${sampleDomain}`}, ${passwordHash}, true, '+254711000002', 'driver', now()),
-        (${passengerAId}, 'Amina Hassan', ${`amina@${sampleDomain}`}, ${passwordHash}, true, '+254711000003', 'passenger', now()),
-        (${passengerBId}, 'Daniel Mwangi', ${`daniel@${sampleDomain}`}, ${passwordHash}, true, '+254711000004', 'passenger', now()),
-        (${passengerCId}, 'Lucy Naliaka', ${`lucy@${sampleDomain}`}, ${passwordHash}, true, '+254711000005', 'passenger', now())
-    `;
-
-    await tx`
-      insert into cars (
-        id, driver_id, name, plate_number, seats, luggage_capacity, verified, document_photo, created_at
-      ) values
-        (${carAId}, ${driverAId}, 'Toyota Fielder Hybrid', 'KDA 234H', 4, 80, true, 'sample-doc-a.jpg', now()),
-        (${carBId}, ${driverAId}, 'Mazda Demio Skyactiv', 'KDL 908M', 3, 55, true, 'sample-doc-b.jpg', now()),
-        (${carCId}, ${driverBId}, 'Subaru Outback Touring', 'KCR 552T', 4, 120, true, 'sample-doc-c.jpg', now())
-    `;
-
-    await tx`
-      insert into journeys (
-        id, driver_id, car_id, origin, destination, departure_time, seats_available, luggage_capacity,
-        price_per_seat, status, start_requested_by_client_id, start_requested_at, started_at,
-        end_requested_at, end_confirmed_by_client_id, completed_at, created_at
-      ) values
-        (
-          ${activeJourneyId}, ${driverAId}, ${carAId}, 'Nairobi', 'Nakuru',
-          ${hoursAgo(-4)}, 2, 70, 1800, 'active',
-          ${passengerAId}, ${hoursAgo(0.5)}, null, null, null, null, ${hoursAgo(5)}
-        ),
-        (
-          ${ongoingJourneyId}, ${driverAId}, ${carBId}, 'Kisumu', 'Eldoret',
-          ${hoursAgo(-1)}, 2, 45, 2200, 'ongoing',
-          ${passengerBId}, ${hoursAgo(2)}, ${hoursAgo(1.5)}, null, null, null, ${hoursAgo(6)}
-        ),
-        (
-          ${completedJourneyId}, ${driverBId}, ${carCId}, 'Mombasa', 'Nairobi',
-          ${hoursAgo(10)}, 2, 90, 3500, 'completed',
-          ${passengerCId}, ${hoursAgo(10)}, ${hoursAgo(9.5)}, ${hoursAgo(7)}, ${passengerCId}, ${hoursAgo(6.5)}, ${hoursAgo(12)}
-        ),
-        (
-          ${pendingJourneyId}, ${driverBId}, ${carCId}, 'Nairobi', 'Meru',
-          ${hoursAgo(-8)}, 4, 120, 2000, 'active',
-          null, null, null, null, null, null, ${hoursAgo(1)}
-        ),
-        (
-          ${failedJourneyId}, ${driverBId}, ${carCId}, 'Thika', 'Nyeri',
-          ${hoursAgo(-6)}, 4, 120, 1600, 'active',
-          null, null, null, null, null, null, ${hoursAgo(0.5)}
-        )
-    `;
-
-    await tx`
-      insert into bookings (
-        id, client_id, journey_id, seats_booked, luggage_space, booking_code, status, confirmed_at, completed_at, created_at
-      ) values
-        (${confirmedBookingId}, ${passengerAId}, ${activeJourneyId}, 1, 10, 'START1', 'confirmed', ${hoursAgo(1)}, null, ${hoursAgo(1)}),
-        (${ongoingBookingId}, ${passengerBId}, ${ongoingJourneyId}, 1, 10, 'ADVNC1', 'confirmed', ${hoursAgo(2)}, null, ${hoursAgo(2)}),
-        (${completedBookingId}, ${passengerCId}, ${completedJourneyId}, 2, 20, 'DONE22', 'completed', ${hoursAgo(9)}, ${hoursAgo(6.5)}, ${hoursAgo(9.5)}),
-        (${pendingBookingId}, ${passengerAId}, ${pendingJourneyId}, 1, 5, 'PEND44', 'payment_pending', null, null, ${hoursAgo(0.5)}),
-        (${failedBookingId}, ${passengerBId}, ${failedJourneyId}, 1, 0, 'FAIL55', 'payment_failed', null, null, ${hoursAgo(0.25)})
-    `;
-
-    await tx`
-      insert into payments (
-        id, booking_id, amount, status, currency, provider, payment_method, phone_number, tx_ref,
-        provider_transaction_id, provider_status, checkout_url, reference, paid_at, verified_at, created_at
-      ) values
-        (
-          ${confirmedPaymentId}, ${confirmedBookingId}, 1800, 'success', 'KES', 'daraja', 'mpesa',
-          '254711000003', 'seed-start-txref', '100001', 'successful', null, 'FLW-START-001',
-          ${hoursAgo(1)}, ${hoursAgo(1)}, ${hoursAgo(1)}
-        ),
-        (
-          ${ongoingPaymentId}, ${ongoingBookingId}, 2200, 'success', 'KES', 'daraja', 'mpesa',
-          '254711000004', 'seed-advance-txref', '100002', 'successful', null, 'FLW-ADV-002',
-          ${hoursAgo(2)}, ${hoursAgo(2)}, ${hoursAgo(2)}
-        ),
-        (
-          ${completedPaymentId}, ${completedBookingId}, 7000, 'success', 'KES', 'daraja', 'mpesa',
-          '254711000005', 'seed-standard-txref', '100003', 'successful', null, 'FLW-STD-003',
-          ${hoursAgo(8)}, ${hoursAgo(8)}, ${hoursAgo(8)}
-        ),
-        (
-          ${pendingPaymentId}, ${pendingBookingId}, 2000, 'pending', 'KES', 'daraja', 'mpesa',
-          '254711000003', 'seed-pending-txref', '100004', 'pending', null, 'FLW-PEND-004',
-          null, null, ${hoursAgo(0.5)}
-        ),
-        (
-          ${failedPaymentId}, ${failedBookingId}, 1600, 'failed', 'KES', 'daraja', 'mpesa',
-          '254711000004', 'seed-failed-txref', '100005', 'failed', null, 'FLW-FAIL-005',
-          null, ${hoursAgo(0.2)}, ${hoursAgo(0.25)}
-        )
-    `;
-
-    await tx`
-      insert into payout_requests (
-        id, payment_id, booking_id, driver_id, client_id, amount, type, status, note, responded_at, created_at
-      ) values
-        (
-          ${standardPayoutRequestId}, ${completedPaymentId}, ${completedBookingId}, ${driverBId}, ${passengerCId},
-          7000, 'standard', 'approved', 'Seeded standard payout after the 6-hour release window.',
-          ${hoursAgo(5.5)}, ${hoursAgo(5.8)}
-        ),
-        (
-          ${advancePayoutRequestId}, ${ongoingPaymentId}, ${ongoingBookingId}, ${driverAId}, ${passengerBId},
-          2200, 'advance', 'pending', 'Seeded advance payout awaiting passenger approval.',
-          null, ${hoursAgo(0.5)}
-        )
-    `;
-
-    await tx`
-      insert into reviews (
-        id, journey_id, client_id, driver_id, rating, comment, created_at
-      ) values
-        (
-          ${reviewId}, ${completedJourneyId}, ${passengerCId}, ${driverBId}, 5,
-          'Comfortable car, smooth ride, and great communication the whole way.',
-          ${hoursAgo(5)}
-        )
-    `;
+    // Stable identifiers make reruns additive, preserving changes made while testing.
+    await tx`select pg_advisory_xact_lock(7834512)`;
+    for (const [key, name, role] of [
+      ["grace", "Grace Wambui", "driver"],
+      ["brian", "Brian Otieno", "driver"],
+      ["amina", "Amina Hassan", "passenger"],
+      ["daniel", "Daniel Mwangi", "passenger"],
+      ["admin", "Demo Administrator", "passenger"],
+    ]) {
+      await tx`insert into users ${tx({ id: id(key), name, email: `${key}@seed.uaway.local`, password_hash: passwordHash, verified: true, email_verified: new Date(), default_role: role })} on conflict do nothing`;
+    }
+    await tx`insert into admin_grants (user_id) values (${id("admin")}) on conflict do nothing`;
+    for (const [key, owner, name, plate] of [
+      ["fielder", "grace", "Toyota Fielder Hybrid", "DEMO 001"],
+      ["outback", "brian", "Subaru Outback", "DEMO 002"],
+    ]) {
+      await tx`insert into cars ${tx({ id: id(key), driver_id: id(owner), name, plate_number: plate, seats: 4, luggage_capacity: 40, verified: true })} on conflict do nothing`;
+    }
+    const routes = [
+      ["nakuru", "grace", "fielder", "Nairobi", "Nakuru", 4, 800],
+      ["naivasha", "brian", "outback", "Nairobi", "Naivasha", 8, 600],
+      ["mombasa", "grace", "fielder", "Nairobi", "Mombasa", 24, 2500],
+      ["kisumu", "brian", "outback", "Nakuru", "Kisumu", 28, 1200],
+      ["eldoret", "grace", "fielder", "Nakuru", "Eldoret", 48, 1000],
+      ["return", "brian", "outback", "Naivasha", "Nairobi", 52, 600],
+      ["ongoing", "grace", "fielder", "Kisumu", "Eldoret", -1, 900],
+      ["completed", "brian", "outback", "Mombasa", "Nairobi", -20, 2500],
+    ];
+    for (const [
+      key,
+      driver,
+      car,
+      origin,
+      destination,
+      hours,
+      price,
+    ] of routes) {
+      const booked = ["nakuru", "ongoing", "completed"].includes(key);
+      const completed = key === "completed";
+      const ongoing = key === "ongoing";
+      const [journey] = await tx`insert into journeys ${tx({
+        id: id(key),
+        driver_id: id(driver),
+        car_id: id(car),
+        origin,
+        destination,
+        departure_time: at(hours),
+        seats_available: booked ? 3 : 4,
+        luggage_capacity: booked ? 35 : 40,
+        price_per_seat: price,
+        note: "Demo ride for testing. No real trip or payment.",
+        status: completed ? "completed" : ongoing ? "ongoing" : "active",
+        started_at: completed ? at(-20) : ongoing ? at(-1) : null,
+        end_requested_at: completed ? at(-10) : null,
+        completed_at: completed ? at(-10) : null,
+      })} on conflict do nothing returning id`;
+      if (!journey || !booked) continue;
+      const bookingId = id(`booking-${key}`);
+      const paymentId = id(`payment-${key}`);
+      const passenger = ongoing ? "daniel" : "amina";
+      await tx`insert into bookings ${tx({
+        id: bookingId,
+        client_id: id(passenger),
+        journey_id: journey.id,
+        seats_booked: 1,
+        luggage_space: 5,
+        booking_code: completed ? "DONE01" : ongoing ? "RIDE01" : "DEMO01",
+        idempotency_key: `demo-${key}`,
+        inventory_held: true,
+        fare_minor: price * 100,
+        fee_minor: 0,
+        status: completed ? "completed" : "confirmed",
+        confirmed_at: at(-24),
+        boarded_at: completed ? at(-20) : ongoing ? at(-1) : null,
+        completed_at: completed ? at(-10) : null,
+      })}`;
+      await tx`insert into payments ${tx({
+        id: paymentId,
+        booking_id: bookingId,
+        amount: price,
+        amount_minor: price * 100,
+        status: "success",
+        currency: "KES",
+        provider: "demo",
+        payment_method: "demo",
+        tx_ref: `demo-${key}`,
+        reference: `DEMO-${key}`,
+        provider_status: "demo_seeded",
+        paid_at: at(-24),
+        verified_at: at(-24),
+        next_check_at: null,
+      })}`;
+      await tx`insert into ledger_entries ${tx({ id: randomUUID(), key: `collection:${paymentId}`, payment_id: paymentId, debit: "mpesa_clearing", credit: "passenger_funds", amount_minor: price * 100, currency: "KES" })}`;
+      if (completed)
+        await tx`insert into reviews ${tx({ id: id("review"), journey_id: journey.id, client_id: id(passenger), driver_id: id(driver), rating: 5, comment: "Demo review: comfortable ride and clear pickup instructions." })}`;
+    }
   });
-
-  console.log("Seed data created successfully.");
-  console.log("Sample login password: SeedPass123!");
-  console.log(`Sample accounts use the @${sampleDomain} domain.`);
+  console.log(
+    "Demo data ready: 5 accounts, 2 cars, 8 rides, 3 paid sample bookings. Reruns preserve existing records.",
+  );
+  console.log(
+    "Accounts: amina, daniel (passengers); grace, brian (drivers); admin (MFA enrollment required).",
+  );
+  console.log("Email domain: @seed.uaway.local. Password: SeedPass123!");
+} catch (error) {
+  console.error("Seed failed:", error.message);
+  process.exitCode = 1;
+} finally {
+  await sql.end();
 }
-
-seed()
-  .catch((error) => {
-    console.error("Seed failed:", error);
-    process.exitCode = 1;
-  })
-  .finally(async () => {
-    await sql.end();
-  });
