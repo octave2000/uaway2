@@ -1,125 +1,121 @@
-import { desc } from "drizzle-orm";
-
-import { setUserVerificationAction } from "@/app/dashboard/admin/actions";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { SubmitButton } from "@/components/ui/submit-button";
+import Link from "next/link";
+import { desc, ilike, or } from "drizzle-orm";
 import { db } from "@/db";
 import { users } from "@/db/schema";
-import { isConfiguredSuperAdminEmail, requireSuperAdmin } from "@/lib/auth/roles";
-
-export default async function AdminUsersPage() {
+import { requireSuperAdmin } from "@/lib/auth/roles";
+import { SubmitButton } from "@/components/ui/submit-button";
+import { Notice } from "@/components/shared/notice";
+import { setUserVerificationAction, suspendUserAction } from "../actions";
+export default async function Users({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; page?: string; error?: string }>;
+}) {
   await requireSuperAdmin();
-
-  const userRows = await db
+  const { q, page: p, error } = await searchParams;
+  const page = Math.max(1, Number(p) || 1);
+  const rows = await db
     .select({
       id: users.id,
       name: users.name,
       email: users.email,
-      phone: users.phone,
       verified: users.verified,
-      defaultRole: users.defaultRole,
       idPhoto: users.idPhoto,
       selfiePhoto: users.selfiePhoto,
+      suspended: users.suspended,
     })
     .from(users)
-    .orderBy(users.verified, desc(users.email));
-
-  const pendingReviewCount = userRows.filter(
-    (user) => !user.verified && user.idPhoto && user.selfiePhoto,
-  ).length;
-
+    .where(
+      q
+        ? or(ilike(users.name, `%${q}%`), ilike(users.email, `%${q}%`))
+        : undefined,
+    )
+    .orderBy(desc(users.id))
+    .limit(21)
+    .offset((page - 1) * 20);
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 md:px-8 md:py-8">
-      <div className="space-y-2">
-        <p className="text-[11px] font-black uppercase tracking-[0.28em] text-primary">Admin users</p>
-        <h1 className="text-3xl font-black tracking-tight text-foreground md:text-5xl">
-          Review identities and account state.
-        </h1>
-        <p className="max-w-3xl text-sm font-medium text-muted-foreground md:text-base">
-          Approve manual identity checks, inspect uploaded documents, and keep track of platform roles.
-        </p>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card className="rounded-[2rem] border-border/60 bg-card/90 shadow-sm"><CardContent className="p-6"><div className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Total users</div><div className="mt-3 text-4xl font-black text-foreground">{userRows.length}</div></CardContent></Card>
-        <Card className="rounded-[2rem] border-border/60 bg-card/90 shadow-sm"><CardContent className="p-6"><div className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Verified</div><div className="mt-3 text-4xl font-black text-foreground">{userRows.filter((user) => user.verified).length}</div></CardContent></Card>
-        <Card className="rounded-[2rem] border-border/60 bg-card/90 shadow-sm"><CardContent className="p-6"><div className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Pending review</div><div className="mt-3 text-4xl font-black text-foreground">{pendingReviewCount}</div></CardContent></Card>
-      </div>
-
-      <div className="grid gap-4 xl:grid-cols-2">
-        {userRows.map((user) => {
-          const resolvedRole = isConfiguredSuperAdminEmail(user.email)
-            ? "super_admin"
-            : user.defaultRole ?? "unset";
-          const hasDocuments = Boolean(user.idPhoto && user.selfiePhoto);
-
-          return (
-            <Card key={user.id} className="rounded-[2rem] border border-border/60 bg-card/90 shadow-sm">
-              <CardHeader className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                <div>
-                  <CardTitle className="text-xl font-black">{user.name || "Unnamed user"}</CardTitle>
-                  <CardDescription className="font-medium">{user.email}</CardDescription>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant="outline">{resolvedRole.replace("_", " ")}</Badge>
-                  <Badge
-                    className={
-                      user.verified
-                        ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-600"
-                        : hasDocuments
-                          ? "border-amber-500/20 bg-amber-500/10 text-amber-600"
-                          : "border-border/60 bg-muted/20 text-foreground"
-                    }
-                  >
-                    {user.verified ? "verified" : hasDocuments ? "awaiting review" : "unverified"}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-5">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-[1.25rem] border border-border/40 bg-background/60 p-4">
-                    <div className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Phone</div>
-                    <div className="mt-2 text-sm font-bold text-foreground">{user.phone || "Not provided"}</div>
-                  </div>
-                  <div className="rounded-[1.25rem] border border-border/40 bg-background/60 p-4">
-                    <div className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Docs</div>
-                    <div className="mt-2 text-sm font-bold text-foreground">{hasDocuments ? "Ready for review" : "Missing"}</div>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap gap-3">
-                  {user.idPhoto ? (
-                    <Button asChild variant="outline" className="rounded-2xl">
-                      <a href={user.idPhoto} target="_blank" rel="noreferrer">Open ID</a>
-                    </Button>
-                  ) : null}
-                  {user.selfiePhoto ? (
-                    <Button asChild variant="outline" className="rounded-2xl">
-                      <a href={user.selfiePhoto} target="_blank" rel="noreferrer">Open selfie</a>
-                    </Button>
-                  ) : null}
-                </div>
-
-                {hasDocuments || user.verified ? (
-                  <form action={setUserVerificationAction} className="flex flex-col gap-3 sm:flex-row">
-                    <input type="hidden" name="userId" value={user.id} />
-                    <input type="hidden" name="nextState" value={user.verified ? "false" : "true"} />
-                    <SubmitButton className="rounded-2xl font-black uppercase tracking-[0.18em]" pendingText="Updating...">
-                      {user.verified ? "Revoke verification" : "Approve verification"}
-                    </SubmitButton>
-                  </form>
-                ) : (
-                  <div className="rounded-[1.25rem] border border-dashed border-border/60 bg-muted/10 p-4 text-sm font-medium text-muted-foreground">
-                    No verification documents uploaded yet.
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+    <div className="page-content">
+      <h1 className="page-title">People and verification</h1>
+      <Notice error={error} />
+      <form>
+        <label className="field">
+          Search people
+          <input className="control" name="q" defaultValue={q} />
+        </label>
+      </form>
+      {rows.slice(0, 20).map((u) => (
+        <div className="panel" key={u.id}>
+          <h2 className="font-semibold">
+            {u.name} ·{" "}
+            {u.suspended ? "Suspended" : u.verified ? "Verified" : "Unverified"}
+          </h2>
+          <p className="my-3 text-sm text-muted-foreground">{u.email}</p>
+          <div className="mb-4 flex gap-4 text-sm text-primary">
+            {u.idPhoto?.startsWith("/api/files/") && (
+              <a target="_blank" rel="noreferrer" href={u.idPhoto}>
+                Review ID ↗
+              </a>
+            )}
+            {u.selfiePhoto?.startsWith("/api/files/") && (
+              <a target="_blank" rel="noreferrer" href={u.selfiePhoto}>
+                Review selfie ↗
+              </a>
+            )}
+          </div>
+          <form action={setUserVerificationAction} className="space-y-3">
+            <input name="userId" type="hidden" value={u.id} />
+            <input
+              name="nextState"
+              type="hidden"
+              value={u.verified ? "false" : "true"}
+            />
+            <label className="field">
+              Review note
+              <input
+                className="control"
+                name="note"
+                maxLength={1000}
+                placeholder="Explain approval, rejection, or required changes"
+                required
+              />
+            </label>
+            <SubmitButton variant="outline">
+              {u.verified ? "Revoke approval" : "Approve identity"}
+            </SubmitButton>
+          </form>
+          <form action={setUserVerificationAction} className="mt-3">
+            <input name="userId" type="hidden" value={u.id} />
+            <input name="nextState" type="hidden" value="false" />
+            <label className="field">
+              Rejection reason
+              <input className="control" name="note" required />
+            </label>
+            <SubmitButton variant="outline" className="mt-3">
+              Request new documents
+            </SubmitButton>
+          </form>
+          <form action={suspendUserAction} className="mt-4">
+            <input name="userId" type="hidden" value={u.id} />
+            <SubmitButton variant="outline">
+              {u.suspended ? "Restore account" : "Suspend account"}
+            </SubmitButton>
+          </form>
+        </div>
+      ))}
+      <nav className="flex justify-between">
+        {page > 1 ? (
+          <Link href={`?page=${page - 1}&q=${encodeURIComponent(q ?? "")}`}>
+            ← Previous
+          </Link>
+        ) : (
+          <span />
+        )}
+        {rows.length > 20 && (
+          <Link href={`?page=${page + 1}&q=${encodeURIComponent(q ?? "")}`}>
+            Next →
+          </Link>
+        )}
+      </nav>
     </div>
   );
 }
