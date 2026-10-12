@@ -1,77 +1,39 @@
-"use server"
-
-import { revalidatePath } from "next/cache";
-import { and, eq } from "drizzle-orm";
-import { redirect } from "next/navigation";
-
-import { db } from "@/db";
-import { journeys } from "@/db/schema";
+"use server";
 import { requireRole } from "@/lib/auth/roles";
-
-function revalidateJourneySurfaces(journeyId: string) {
-  revalidatePath("/dashboard");
-  revalidatePath("/dashboard/journeys");
-  revalidatePath("/dashboard/bookings");
-  revalidatePath("/dashboard/payments");
-  revalidatePath(`/dashboard/journeys/${journeyId}`);
-  revalidatePath(`/dashboard/journeys/${journeyId}/manage`);
-}
-
-export async function confirmRideStartAction(formData: FormData) {
+import { runAction } from "@/lib/domain/action";
+import { board, changeJourney, reviewBooking } from "@/lib/domain/rides";
+import { cancelJourney } from "@/lib/domain/journeys";
+export async function confirmRideStartAction(data: FormData) {
   const { userId } = await requireRole("driver");
-  const journeyId = formData.get("journeyId") as string;
-
-  if (!journeyId) {
-    redirect("/dashboard/journeys");
-  }
-
-  const [journey] = await db
-    .select()
-    .from(journeys)
-    .where(and(eq(journeys.id, journeyId), eq(journeys.driverId, userId)))
-    .limit(1);
-
-  if (!journey || journey.status !== "active" || !journey.startRequestedAt) {
-    redirect(`/dashboard/journeys/${journeyId}/manage`);
-  }
-
-  await db
-    .update(journeys)
-    .set({
-      status: "ongoing",
-      startedAt: new Date(),
-    })
-    .where(eq(journeys.id, journeyId));
-
-  revalidateJourneySurfaces(journeyId);
-  redirect(`/dashboard/journeys/${journeyId}/manage`);
+  const id = String(data.get("journeyId"));
+  await runAction(`/dashboard/journeys/${id}/manage`, () =>
+    changeJourney(userId, id, "start"),
+  );
 }
-
-export async function requestRideEndAction(formData: FormData) {
+export async function requestRideEndAction(data: FormData) {
   const { userId } = await requireRole("driver");
-  const journeyId = formData.get("journeyId") as string;
-
-  if (!journeyId) {
-    redirect("/dashboard/journeys");
-  }
-
-  const [journey] = await db
-    .select()
-    .from(journeys)
-    .where(and(eq(journeys.id, journeyId), eq(journeys.driverId, userId)))
-    .limit(1);
-
-  if (!journey || journey.status !== "ongoing") {
-    redirect(`/dashboard/journeys/${journeyId}/manage`);
-  }
-
-  await db
-    .update(journeys)
-    .set({
-      endRequestedAt: new Date(),
-    })
-    .where(eq(journeys.id, journeyId));
-
-  revalidateJourneySurfaces(journeyId);
-  redirect(`/dashboard/journeys/${journeyId}/manage`);
+  const id = String(data.get("journeyId"));
+  await runAction(`/dashboard/journeys/${id}/manage`, () =>
+    changeJourney(userId, id, "end"),
+  );
+}
+export async function boardAction(data: FormData) {
+  const { userId } = await requireRole("driver");
+  await runAction(`/dashboard/journeys/${data.get("journeyId")}/manage`, () =>
+    board(userId, String(data.get("bookingId")), String(data.get("code"))),
+  );
+}
+export async function cancelJourneyAction(data: FormData) {
+  const { userId } = await requireRole("driver");
+  const id = String(data.get("journeyId"));
+  await runAction(`/dashboard/journeys/${id}/manage`, () =>
+    cancelJourney(userId, id),
+  );
+}
+export async function submitPassengerReviewAction(data: FormData) {
+  const { userId } = await requireRole("driver");
+  const id = String(data.get("journeyId"));
+  await runAction(`/dashboard/journeys/${id}/manage`, () =>
+    reviewBooking(userId, Object.fromEntries(data)),
+  );
 }

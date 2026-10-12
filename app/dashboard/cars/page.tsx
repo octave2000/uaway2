@@ -1,3 +1,4 @@
+import { Notice } from "@/components/shared/notice";
 import { db } from "@/db";
 import { cars } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -22,7 +23,11 @@ import {
 import Link from "next/link";
 import { requireRole } from "@/lib/auth/roles";
 
-export default async function CarsPage() {
+export default async function CarsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
   const { userId } = await requireRole("driver");
 
   const userCars = await db
@@ -32,6 +37,7 @@ export default async function CarsPage() {
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-8 w-full max-w-5xl mx-auto">
+      <Notice error={(await searchParams).error} />
       <div className="flex items-center justify-between">
         <div className="flex flex-col gap-1.5">
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
