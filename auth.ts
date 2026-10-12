@@ -9,6 +9,8 @@ import { HubMail } from "hubmail";
 import { z } from "zod";
 
 import { db } from "@/db";
+import { eq } from "drizzle-orm";
+import { limit } from "@/lib/domain/shared";
 import { accounts, users, verificationTokens } from "@/db/schema";
 import {
   getUserByEmail,
@@ -100,6 +102,7 @@ const magicLinkProvider = {
     request,
     url,
   }) {
+    await limit(`magic:${identifier}`, 3, 15 * 60000);
     const host = new URL(request.url).host;
     const email = buildMagicLinkEmail({
       expires,
@@ -114,9 +117,10 @@ const magicLinkProvider = {
         text: email.text,
         html: email.html,
       });
-      console.log("Email sent successfully:", data);
+      void data;
     } catch (error) {
-      console.error("Error sending email:", error);
+      console.error("Magic link delivery failed");
+      throw error;
     }
   },
 } satisfies EmailConfig;
@@ -172,6 +176,7 @@ export const authConfig = {
           return null;
         }
 
+        await limit(`login:${parsedCredentials.data.email}`, 10, 15 * 60000);
         const user = await getUserByEmail(parsedCredentials.data.email);
 
         if (!user?.passwordHash) {
@@ -207,7 +212,15 @@ export const authConfig = {
 
       return true;
     },
-    async jwt({ token }) {
+    async jwt({ token, user }) {
+      if (!token.sub) return null;
+      const [record] = await db
+        .select({ suspended: users.suspended, version: users.sessionVersion })
+        .from(users)
+        .where(eq(users.id, token.sub));
+      if (!record || record.suspended) return null;
+      if (user) token.version = record.version;
+      if (token.version !== record.version) return null;
       return token;
     },
     async session({ session, token }) {
