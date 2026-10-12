@@ -21,24 +21,36 @@ export default function DashboardNotFound() {
             That dashboard page could not be found.
           </h1>
           <p className="text-sm font-medium leading-6 text-muted-foreground md:text-base">
-            The page may have moved, the record may no longer exist, or the URL is incomplete.
+            The page may have moved, the record may no longer exist, or the URL
+            is incomplete.
           </p>
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
-          <Button asChild className="rounded-2xl font-black uppercase tracking-[0.18em]">
+          <Button
+            asChild
+            className="rounded-2xl font-black uppercase tracking-[0.18em]"
+          >
             <Link href="/dashboard">
               <LayoutDashboard className="h-4 w-4" />
               Dashboard home
             </Link>
           </Button>
-          <Button asChild variant="outline" className="rounded-2xl font-black uppercase tracking-[0.18em]">
+          <Button
+            asChild
+            variant="outline"
+            className="rounded-2xl font-black uppercase tracking-[0.18em]"
+          >
             <Link href="/dashboard/journeys">
               <Search className="h-4 w-4" />
               Browse journeys
             </Link>
           </Button>
         </div>
-        <Button asChild variant="ghost" className="w-fit rounded-2xl px-0 font-bold text-muted-foreground hover:bg-transparent">
+        <Button
+          asChild
+          variant="ghost"
+          className="w-fit rounded-2xl px-0 font-bold text-muted-foreground hover:bg-transparent"
+        >
           <Link href="/dashboard">
             <ArrowLeft className="h-4 w-4" />
             Back to dashboard
