@@ -2,7 +2,13 @@
 
 import { type ChangeEvent, useMemo, useRef, useState } from "react";
 import Image from "next/image";
-import { AlertCircle, CheckCircle2, FileText, Loader2, UploadCloud } from "lucide-react";
+import {
+  AlertCircle,
+  CheckCircle2,
+  FileText,
+  Loader2,
+  UploadCloud,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -94,7 +100,9 @@ export function FileUploadField({
       <div
         className={cn(
           "rounded-[1.5rem] border border-dashed border-border/60 bg-muted/10 p-4 transition-colors",
-          isUploading ? "border-primary/50 bg-primary/5" : "hover:border-primary/40",
+          isUploading
+            ? "border-primary/50 bg-primary/5"
+            : "hover:border-primary/40",
         )}
       >
         <div className="mb-3 flex items-center justify-between gap-3">
@@ -117,6 +125,7 @@ export function FileUploadField({
         {kind === "image" && uploadedUrl ? (
           <div className="relative mb-4 aspect-[16/9] overflow-hidden rounded-[1.25rem] border border-border/50 bg-background/70">
             <Image
+              unoptimized={uploadedUrl.startsWith("/api/files/")}
               src={uploadedUrl}
               alt={label}
               fill
@@ -141,7 +150,9 @@ export function FileUploadField({
                 {uploadedFileName}
               </div>
               <div className="text-xs font-medium text-muted-foreground">
-                {isPdfFile(uploadedUrl) ? "PDF document uploaded" : "Image document uploaded"}
+                {isPdfFile(uploadedUrl)
+                  ? "PDF document uploaded"
+                  : "Image document uploaded"}
               </div>
             </div>
           </div>
@@ -152,7 +163,9 @@ export function FileUploadField({
         )}
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="text-xs font-medium text-muted-foreground">{acceptedLabel}</div>
+          <div className="text-xs font-medium text-muted-foreground">
+            {acceptedLabel}
+          </div>
           <Button
             type="button"
             variant="outline"
