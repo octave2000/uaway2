@@ -23,7 +23,9 @@ export default function NotFound() {
             This page doesn&apos;t exist anymore.
           </h1>
           <p className="max-w-2xl text-sm font-medium leading-6 text-muted-foreground md:text-base">
-            The link may be outdated, the ride may have been removed, or the address is incorrect. Use one of the routes below to get back into the app.
+            The link may be outdated, the ride may have been removed, or the
+            address is incorrect. Use one of the routes below to get back into
+            the app.
           </p>
         </div>
 
@@ -36,7 +38,10 @@ export default function NotFound() {
             <p className="mb-4 text-sm font-medium text-muted-foreground">
               Return to the homepage and search the latest active rides.
             </p>
-            <Button asChild className="rounded-2xl font-black uppercase tracking-[0.18em]">
+            <Button
+              asChild
+              className="rounded-2xl font-black uppercase tracking-[0.18em]"
+            >
               <Link href="/">Go home</Link>
             </Button>
           </div>
@@ -47,9 +52,14 @@ export default function NotFound() {
               Dashboard
             </div>
             <p className="mb-4 text-sm font-medium text-muted-foreground">
-              Jump back into your dashboard and continue from current bookings or journeys.
+              Jump back into your dashboard and continue from current bookings
+              or journeys.
             </p>
-            <Button asChild variant="outline" className="rounded-2xl font-black uppercase tracking-[0.18em]">
+            <Button
+              asChild
+              variant="outline"
+              className="rounded-2xl font-black uppercase tracking-[0.18em]"
+            >
               <Link href="/dashboard">Open dashboard</Link>
             </Button>
           </div>

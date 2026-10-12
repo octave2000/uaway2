@@ -1,3 +1,5 @@
+import { Pwa } from "@/components/pwa";
+import { Toaster } from "@/components/ui/sonner";
 import type { Metadata, Viewport } from "next";
 import { NextSSRPlugin } from "@uploadthing/react/next-ssr-plugin";
 import { extractRouterConfig } from "uploadthing/server";
@@ -5,20 +7,13 @@ import { extractRouterConfig } from "uploadthing/server";
 import { uploadRouter } from "@/app/api/uploadthing/core";
 
 import "./globals.css";
-import { Open_Sans } from "next/font/google";
+
 import { ThemeProvider } from "@/components/theme-provider";
 
-const fontSans = Open_Sans({
-  subsets: ["latin"],
-  variable: "--font-sans",
-});
-
 export const viewport: Viewport = {
-  themeColor: "#000000",
+  themeColor: "#f7f8fa",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
 };
 
 export const metadata: Metadata = {
@@ -30,9 +25,6 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "UAWAY",
   },
-  icons: {
-    apple: "/icons/icon-192x192.png",
-  },
 };
 
 export default function RootLayout({
@@ -42,18 +34,19 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${fontSans.variable} antialiased`}>
+      <body className="antialiased">
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
-          enableSystem
+          defaultTheme="light"
+          enableSystem={false}
           disableTransitionOnChange
         >
           <NextSSRPlugin routerConfig={extractRouterConfig(uploadRouter)} />
+          <Pwa />
           {children}
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>
   );
 }
-
