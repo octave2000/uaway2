@@ -28,7 +28,9 @@ export function PageError({
           <AlertTriangle className="h-10 w-10" />
         </div>
         <div className="space-y-3">
-          <h1 className="text-3xl font-black tracking-tight text-foreground">{title}</h1>
+          <h1 className="text-3xl font-black tracking-tight text-foreground">
+            {title}
+          </h1>
           <p className="text-sm font-medium leading-6 text-muted-foreground md:text-base">
             {description}
           </p>

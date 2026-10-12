@@ -1,35 +1,69 @@
-import { Sidebar } from "./sidebar"
-import { BottomNav } from "./bottom-nav"
+import Link from "next/link";
+import { Bell, CircleHelp } from "lucide-react";
+import { and, count, eq, isNull } from "drizzle-orm";
+import { db } from "@/db";
+import { outbox } from "@/db/schema";
+import { Sidebar } from "./sidebar";
+import { BottomNav } from "./bottom-nav";
+import { BrandLogo } from "@/components/shared/brand-logo";
 
-export function DashboardLayout({
+export async function DashboardLayout({
   children,
   role,
+  userId,
 }: {
   children: React.ReactNode;
   role: "passenger" | "driver" | "super_admin";
+  userId: string;
 }) {
+  const [unread] = await db
+    .select({ n: count() })
+    .from(outbox)
+    .where(and(eq(outbox.userId, userId), isNull(outbox.readAt)));
   return (
-    <div className="flex min-h-screen bg-background relative overflow-hidden">
-      {/* Premium Background Effects */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[120px] -mr-64 -mt-64" />
-        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-secondary/5 rounded-full blur-[120px] -ml-64 -mb-64" />
-      </div>
-
-      {/* Desktop Sidebar */}
-      <div className="hidden md:flex w-64 flex-col fixed inset-y-0 z-50 border-r bg-background/80 backdrop-blur-md">
+    <div className="min-h-screen bg-background">
+      <aside className="fixed inset-y-0 z-40 hidden w-60 border-r bg-card md:block">
         <Sidebar role={role} />
+      </aside>
+      <div className="min-w-0 md:pl-60">
+        <header className="flex h-16 items-center justify-between border-b bg-card px-5 md:px-8">
+          <BrandLogo href="/dashboard" className="size-12 md:hidden" />
+          <p className="hidden text-sm text-muted-foreground md:block">
+            A little company. A better journey.
+          </p>
+          <div className="flex items-center gap-3">
+            <Link
+              href={
+                role === "super_admin"
+                  ? "/dashboard/admin/support"
+                  : "/dashboard/support"
+              }
+              aria-label="Help and support"
+              className="flex size-11 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
+            >
+              <CircleHelp size={21} strokeWidth={1.6} />
+            </Link>
+            <Link
+              href="/dashboard/notifications"
+              aria-label={`Notifications${unread.n ? `, ${unread.n} unread` : ""}`}
+              className="relative flex size-11 items-center justify-center rounded-full hover:bg-muted"
+            >
+              <Bell size={23} strokeWidth={1.6} />
+              {unread.n > 0 && (
+                <span className="absolute right-0 top-0 rounded-full border-2 border-card bg-destructive px-1.5 text-[10px] leading-4 text-white">
+                  {unread.n > 9 ? "9+" : unread.n}
+                </span>
+              )}
+            </Link>
+          </div>
+        </header>
+        <main className="pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-6">
+          {children}
+        </main>
       </div>
-      
-      {/* Main Content Area */}
-      <main className="page-shell-enter relative z-10 flex-1 pb-20 md:pl-64 md:pb-0">
-        {children}
-      </main>
-
-      {/* Mobile Bottom Navigation */}
-      <div className="md:hidden fixed bottom-6 left-6 right-6 z-50 h-16 bg-background/80 backdrop-blur-xl border border-white/20 shadow-2xl rounded-2xl overflow-hidden">
+      <div className="fixed inset-x-0 bottom-0 z-50 border-t bg-card pb-[env(safe-area-inset-bottom)] md:hidden">
         <BottomNav role={role} />
       </div>
     </div>
-  )
+  );
 }

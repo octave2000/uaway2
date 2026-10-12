@@ -1,4 +1,5 @@
 import { Loader2 } from "lucide-react";
+import { BrandLogo } from "@/components/shared/brand-logo";
 
 type PageLoaderProps = {
   eyebrow: string;
@@ -10,6 +11,7 @@ export function PageLoader({ eyebrow, title, description }: PageLoaderProps) {
   return (
     <div className="flex min-h-[100dvh] w-full items-center justify-center bg-background px-4 py-8">
       <div className="page-shell-enter flex w-full max-w-lg flex-col items-center gap-6 text-center">
+        <BrandLogo className="size-16" />
         <div className="flex h-16 w-16 items-center justify-center rounded-full border border-border/60 bg-card text-primary shadow-sm">
           <Loader2 className="h-7 w-7 animate-spin" />
         </div>
