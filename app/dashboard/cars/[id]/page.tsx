@@ -1,12 +1,25 @@
+import { Notice } from "@/components/shared/notice";
 import { and, eq } from "drizzle-orm";
-import { ArrowLeft, Briefcase, CarFront, ShieldCheck, Users } from "lucide-react";
+import {
+  ArrowLeft,
+  Briefcase,
+  CarFront,
+  ShieldCheck,
+  Users,
+} from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { CarImage } from "@/components/shared/car-image";
 import { FileUploadField } from "@/components/uploadthing/file-upload-field";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -17,7 +30,10 @@ import { requireRole } from "@/lib/auth/roles";
 
 import { submitCarVerificationAction, updateCarAction } from "./actions";
 
-export default async function CarDetailsPage(props: { params: Promise<{ id: string }> }) {
+export default async function CarDetailsPage(props: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ error?: string }>;
+}) {
   const { id } = await props.params;
   const { userId } = await requireRole("driver");
 
@@ -49,6 +65,10 @@ export default async function CarDetailsPage(props: { params: Promise<{ id: stri
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-6 md:gap-8 md:px-8 md:py-8">
+      <Notice
+        error={(await props.searchParams).error}
+        notice={car.verificationNote ?? undefined}
+      />
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild>
           <Link href="/dashboard/cars">
@@ -63,7 +83,8 @@ export default async function CarDetailsPage(props: { params: Promise<{ id: stri
             {car.name}
           </h1>
           <p className="text-sm font-medium text-muted-foreground">
-            Update your vehicle details and keep its verification status current.
+            Update your vehicle details and keep its verification status
+            current.
           </p>
         </div>
         <Badge
@@ -80,9 +101,12 @@ export default async function CarDetailsPage(props: { params: Promise<{ id: stri
       <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
         <Card className="rounded-[2rem] border-border/60 bg-card/90 shadow-sm">
           <CardHeader>
-            <CardTitle className="text-2xl font-black">Vehicle details</CardTitle>
+            <CardTitle className="text-2xl font-black">
+              Vehicle details
+            </CardTitle>
             <CardDescription className="font-medium">
-              Keep these details accurate so passengers see the correct vehicle information on your journeys.
+              Keep these details accurate so passengers see the correct vehicle
+              information on your journeys.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -91,7 +115,12 @@ export default async function CarDetailsPage(props: { params: Promise<{ id: stri
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="name">Vehicle name / model</Label>
-                  <Input id="name" name="name" defaultValue={car.name} className="h-12 rounded-2xl" />
+                  <Input
+                    id="name"
+                    name="name"
+                    defaultValue={car.name}
+                    className="h-12 rounded-2xl"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="plateNumber">Plate number</Label>
@@ -104,7 +133,15 @@ export default async function CarDetailsPage(props: { params: Promise<{ id: stri
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="seats">Passenger seats</Label>
-                  <Input id="seats" name="seats" type="number" min={1} max={10} defaultValue={car.seats} className="h-12 rounded-2xl" />
+                  <Input
+                    id="seats"
+                    name="seats"
+                    type="number"
+                    min={1}
+                    max={10}
+                    defaultValue={car.seats}
+                    className="h-12 rounded-2xl"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="luggageCapacity">Luggage capacity (kg)</Label>
@@ -127,6 +164,26 @@ export default async function CarDetailsPage(props: { params: Promise<{ id: stri
                 name="photoUrl"
                 value={car.photo}
               />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="field">
+                  Insurance provider
+                  <input className="control" name="insuranceProvider" maxLength={100} defaultValue={car.insuranceProvider ?? ""} />
+                </label>
+                <label className="field">
+                  Insurance expiry
+                  <input className="control" name="insuranceExpiry" type="date" defaultValue={car.insuranceExpiry?.toISOString().slice(0, 10) ?? ""} />
+                </label>
+              </div>
+              <FileUploadField
+                accept="image/*,.pdf"
+                acceptedLabel="JPG, PNG, or PDF up to 8MB"
+                endpoint="insuranceDocument"
+                helper="Upload the certificate for a separate insurance review."
+                kind="document"
+                label="Insurance certificate"
+                name="insuranceDocumentUrl"
+                value={car.insuranceDocument}
+              />
               <SubmitButton
                 type="submit"
                 className="h-12 rounded-2xl px-8 text-sm font-black uppercase tracking-[0.18em]"
@@ -141,7 +198,9 @@ export default async function CarDetailsPage(props: { params: Promise<{ id: stri
         <div className="flex flex-col gap-6">
           <Card className="rounded-[2rem] border-border/60 bg-card/90 shadow-sm">
             <CardHeader>
-              <CardTitle className="text-xl font-black">Vehicle snapshot</CardTitle>
+              <CardTitle className="text-xl font-black">
+                Vehicle snapshot
+              </CardTitle>
             </CardHeader>
             <CardContent className="grid gap-3">
               <CarImage
@@ -155,21 +214,27 @@ export default async function CarDetailsPage(props: { params: Promise<{ id: stri
                   <Users className="h-4 w-4 text-primary" />
                   Seats
                 </div>
-                <div className="text-2xl font-black text-foreground">{car.seats}</div>
+                <div className="text-2xl font-black text-foreground">
+                  {car.seats}
+                </div>
               </div>
               <div className="rounded-[1.25rem] border border-border/40 bg-background/60 p-4">
                 <div className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
                   <Briefcase className="h-4 w-4 text-primary" />
                   Luggage
                 </div>
-                <div className="text-2xl font-black text-foreground">{car.luggageCapacity}kg</div>
+                <div className="text-2xl font-black text-foreground">
+                  {car.luggageCapacity}kg
+                </div>
               </div>
               <div className="rounded-[1.25rem] border border-border/40 bg-background/60 p-4">
                 <div className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
                   <CarFront className="h-4 w-4 text-primary" />
                   Plate
                 </div>
-                <div className="text-lg font-black text-foreground">{car.plateNumber}</div>
+                <div className="text-lg font-black text-foreground">
+                  {car.plateNumber}
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -181,13 +246,17 @@ export default async function CarDetailsPage(props: { params: Promise<{ id: stri
                 Verification
               </CardTitle>
               <CardDescription className="font-medium">
-                Upload your car document and submit the vehicle for trust review. Submitted documents stay pending until you review them manually.
+                Upload your car document and submit the vehicle for trust
+                review. Submitted documents stay pending until you review them
+                manually.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
               {car.verified ? (
                 <div className="rounded-[1.5rem] border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm font-medium text-emerald-700 dark:text-emerald-400">
-                  This vehicle is currently verified. You can still upload a new registration document any time if details change. A new upload will return the vehicle to manual review.
+                  This vehicle is currently verified. You can still upload a new
+                  registration document any time if details change. A new upload
+                  will return the vehicle to manual review.
                 </div>
               ) : null}
               <form action={submitCarVerificationAction}>
