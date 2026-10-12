@@ -4,15 +4,22 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
+    "build": "next build --webpack",
+    "start": "node scripts/start-production.mjs",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "db:seed": "node db/seed.mjs",
     "db:generate": "drizzle-kit generate --config=db/drizzle.config.ts",
     "db:migrate": "drizzle-kit migrate --config=db/drizzle.config.ts",
     "db:push": "drizzle-kit push --config=db/drizzle.config.ts",
-    "db:studio": "drizzle-kit studio --config=db/drizzle.config.ts"
+    "db:studio": "drizzle-kit studio --config=db/drizzle.config.ts",
+    "worker": "tsx worker/index.ts",
+    "test": "vitest run --exclude tests/e2e/**",
+    "test:unit": "vitest run tests/policy.test.ts",
+    "test:e2e": "playwright test",
+    "test:integration": "vitest run tests/integration",
+    "db:preflight": "tsx scripts/preflight.ts",
+    "db:grant-admin": "tsx scripts/grant-admin.ts"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.1",
@@ -27,9 +34,10 @@
     "drizzle-orm": "^0.45.1",
     "hubmail": "^1.0.11",
     "lucide-react": "^0.577.0",
-    "next": "16.1.6",
+    "next": "^16.4.0",
     "next-auth": "^5.0.0-beta.30",
     "next-themes": "^0.4.6",
+    "pg-boss": "^12.37.1",
     "postgres": "^3.4.8",
     "radix-ui": "^1.4.3",
     "react": "19.2.3",
@@ -41,16 +49,21 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.0",
     "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
+    "@types/node": "^24.19.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "dotenv": "^17.3.1",
     "drizzle-kit": "^0.31.9",
+    "embedded-postgres": "^18.4.0-beta.17",
     "eslint": "^9",
-    "eslint-config-next": "16.1.6",
+    "eslint-config-next": "^16.4.0",
+    "prettier": "^3.9.9",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "tsx": "^4.23.15",
+    "typescript": "^5",
+    "vitest": "^5.0.3"
   },
   "ignoreScripts": [
     "sharp",
@@ -59,5 +72,12 @@
   "trustedDependencies": [
     "sharp",
     "unrs-resolver"
-  ]
+  ],
+  "engines": {
+    "node": ">=24"
+  },
+  "overrides": {
+    "effect": "^3.20.0"
+  },
+  "type": "module"
 }
