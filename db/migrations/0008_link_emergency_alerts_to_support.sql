@@ -1,0 +1,2 @@
+ALTER TABLE "support_cases" ADD COLUMN "emergency_alert_id" text;--> statement-breakpoint
+ALTER TABLE "support_cases" ADD CONSTRAINT "support_cases_emergency_alert_id_emergency_alerts_id_fk" FOREIGN KEY ("emergency_alert_id") REFERENCES "public"."emergency_alerts"("id") ON DELETE set null ON UPDATE no action;

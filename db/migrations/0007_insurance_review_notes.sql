@@ -1,0 +1,1 @@
+ALTER TABLE "cars" ADD COLUMN "insurance_verification_note" text;
