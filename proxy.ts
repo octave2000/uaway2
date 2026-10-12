@@ -5,7 +5,8 @@ import { auth } from "@/auth";
 export default auth((request) => {
   const isLoggedIn = Boolean(request.auth);
   const isAuthRoute =
-    request.nextUrl.pathname === "/login" || request.nextUrl.pathname === "/register";
+    request.nextUrl.pathname === "/login" ||
+    request.nextUrl.pathname === "/register";
   const isDashboardRoute = request.nextUrl.pathname.startsWith("/dashboard");
 
   if (!isLoggedIn && isDashboardRoute) {
