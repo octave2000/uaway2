@@ -3,10 +3,8 @@
 import Link from "next/link";
 import type { Session } from "next-auth";
 import { Button } from "@/components/ui/button";
-import { 
-  LayoutDashboard 
-} from "lucide-react";
-import Image from "next/image";
+import { LayoutDashboard } from "lucide-react";
+import { BrandLogo } from "@/components/shared/brand-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -37,48 +35,45 @@ export function Navbar({
           { href: "/dashboard/admin/payments", label: "Payments" },
         ]
       : role === "driver"
-      ? [
-          { href: "/dashboard/journeys", label: "Driver Journeys" },
-          { href: "/dashboard/payments", label: "Payments" },
-        ]
-      : role === "passenger"
         ? [
-            { href: "/dashboard/journeys", label: "Find Ride" },
-            { href: "/dashboard/bookings", label: "My Bookings" },
+            { href: "/dashboard/journeys", label: "Driver Journeys" },
+            { href: "/dashboard/payments", label: "Payments" },
           ]
-        : [
-            { href: "/dashboard/journeys", label: "Find Ride" },
-            { href: "/dashboard/journeys/new", label: "Post Ride" },
-          ];
+        : role === "passenger"
+          ? [
+              { href: "/dashboard/journeys", label: "Find Ride" },
+              { href: "/dashboard/bookings", label: "My Bookings" },
+            ]
+          : [
+              { href: "/dashboard/journeys", label: "Find Ride" },
+              { href: "/dashboard/journeys/new", label: "Post Ride" },
+            ];
 
   return (
-    <nav className={cn(
-      "fixed top-4 left-1/2 -translate-x-1/2 z-[100] w-[92%] max-w-7xl transition-all duration-500",
-      isScrolled ? "top-2" : "top-4"
-    )}>
-      <div className={cn(
-        "h-16 md:h-20 px-4 md:px-8 rounded-[1.5rem] md:rounded-[2.5rem] flex items-center justify-between transition-all duration-500",
-        "bg-background/60 backdrop-blur-2xl border border-white/20 dark:border-white/10 shadow-2xl shadow-primary/5 dark:shadow-none"
-      )}>
+    <nav
+      className={cn(
+        "fixed top-4 left-1/2 -translate-x-1/2 z-[100] w-[92%] max-w-7xl transition-all duration-500",
+        isScrolled ? "top-2" : "top-4",
+      )}
+    >
+      <div
+        className={cn(
+          "h-16 md:h-20 px-4 md:px-8 rounded-[1.5rem] md:rounded-[2.5rem] flex items-center justify-between transition-all duration-500",
+          "bg-background/60 backdrop-blur-2xl border border-white/20 dark:border-white/10 shadow-2xl shadow-primary/5 dark:shadow-none",
+        )}
+      >
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-3 group shrink-0">
-          <div className="w-10 h-10 md:w-14 md:h-14 rounded-2xl overflow-hidden shadow-lg group-hover:scale-105 transition-transform duration-500 relative border border-white/20">
-            <Image 
-              src="/logo.jpg" 
-              alt="UAWAY Logo" 
-              fill 
-              className="object-cover"
-              priority
-            />
-          </div>
-          <span className="text-xl md:text-2xl font-black tracking-tighter uppercase italic text-foreground hidden sm:block">UAWAY</span>
-        </Link>
+        <BrandLogo className="size-14 transition-transform duration-300 hover:scale-105 md:size-16" />
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center gap-2 bg-muted/30 p-1.5 rounded-full border border-border/50">
           {navLinks.map((link) => (
             <Link key={link.href} href={link.href}>
-              <Button variant="ghost" size="sm" className="rounded-full px-5 font-black uppercase tracking-widest text-[10px]">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="rounded-full px-5 font-black uppercase tracking-widest text-[10px]"
+              >
                 {link.label}
               </Button>
             </Link>
@@ -100,7 +95,10 @@ export function Navbar({
           ) : (
             <div className="flex items-center gap-2">
               <Link href="/login" className="hidden sm:block">
-                <Button variant="ghost" className="rounded-full font-black uppercase tracking-widest text-[10px] h-10 md:h-12 px-6">
+                <Button
+                  variant="ghost"
+                  className="rounded-full font-black uppercase tracking-widest text-[10px] h-10 md:h-12 px-6"
+                >
                   Login
                 </Button>
               </Link>
