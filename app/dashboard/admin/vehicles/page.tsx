@@ -1,108 +1,140 @@
-import { desc, eq } from "drizzle-orm";
-
-import { setCarVerificationAction } from "@/app/dashboard/admin/actions";
-import { CarImage } from "@/components/shared/car-image";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { SubmitButton } from "@/components/ui/submit-button";
+import Link from "next/link";
+import { desc, ilike, or } from "drizzle-orm";
 import { db } from "@/db";
-import { cars, users } from "@/db/schema";
+import { cars } from "@/db/schema";
 import { requireSuperAdmin } from "@/lib/auth/roles";
-
-export default async function AdminVehiclesPage() {
+import { SubmitButton } from "@/components/ui/submit-button";
+import { Notice } from "@/components/shared/notice";
+import { setCarInsuranceAction, setCarVerificationAction } from "../actions";
+export default async function Vehicles({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; page?: string; error?: string }>;
+}) {
   await requireSuperAdmin();
-
-  const vehicleRows = await db
-    .select({
-      car: cars,
-      driver: {
-        name: users.name,
-        email: users.email,
-      },
-    })
+  const { q, page: p, error } = await searchParams;
+  const page = Math.max(1, Number(p) || 1);
+  const rows = await db
+    .select()
     .from(cars)
-    .innerJoin(users, eq(cars.driverId, users.id))
-    .orderBy(cars.verified, desc(cars.createdAt));
-
+    .where(
+      q
+        ? or(ilike(cars.name, `%${q}%`), ilike(cars.plateNumber, `%${q}%`))
+        : undefined,
+    )
+    .orderBy(desc(cars.createdAt))
+    .limit(21)
+    .offset((page - 1) * 20);
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 md:px-8 md:py-8">
-      <div className="space-y-2">
-        <p className="text-[11px] font-black uppercase tracking-[0.28em] text-primary">Admin vehicles</p>
-        <h1 className="text-3xl font-black tracking-tight text-foreground md:text-5xl">
-          Vehicle verification and fleet review.
-        </h1>
-        <p className="max-w-3xl text-sm font-medium text-muted-foreground md:text-base">
-          Inspect the uploaded vehicle image and registration document, then approve or revoke verification.
-        </p>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card className="rounded-[2rem] border-border/60 bg-card/90 shadow-sm"><CardContent className="p-6"><div className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Vehicles</div><div className="mt-3 text-4xl font-black text-foreground">{vehicleRows.length}</div></CardContent></Card>
-        <Card className="rounded-[2rem] border-border/60 bg-card/90 shadow-sm"><CardContent className="p-6"><div className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Verified</div><div className="mt-3 text-4xl font-black text-foreground">{vehicleRows.filter((row) => row.car.verified).length}</div></CardContent></Card>
-        <Card className="rounded-[2rem] border-border/60 bg-card/90 shadow-sm"><CardContent className="p-6"><div className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Waiting review</div><div className="mt-3 text-4xl font-black text-foreground">{vehicleRows.filter((row) => !row.car.verified && row.car.documentPhoto).length}</div></CardContent></Card>
-      </div>
-
-      <div className="grid gap-4 xl:grid-cols-2">
-        {vehicleRows.map(({ car, driver }) => (
-          <Card key={car.id} className="overflow-hidden rounded-[2rem] border border-border/60 bg-card/90 shadow-sm">
-            <CarImage
-              src={car.photo}
-              alt={car.name}
-              className="aspect-[16/8]"
-              sizes="(max-width: 1280px) 100vw, 50vw"
-            />
-            <CardHeader className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-              <div>
-                <CardTitle className="text-xl font-black">{car.name}</CardTitle>
-                <CardDescription className="font-medium">
-                  {car.plateNumber} • {driver.name || "Unknown driver"} • {driver.email}
-                </CardDescription>
-              </div>
-              <Badge
-                className={
-                  car.verified
-                    ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-600"
-                    : car.documentPhoto
-                      ? "border-amber-500/20 bg-amber-500/10 text-amber-600"
-                      : "border-border/60 bg-muted/20 text-foreground"
-                }
-              >
-                {car.verified ? "verified" : car.documentPhoto ? "awaiting review" : "missing docs"}
-              </Badge>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <div className="grid gap-3 sm:grid-cols-3">
-                <div className="rounded-[1.25rem] border border-border/40 bg-background/60 p-4"><div className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Seats</div><div className="mt-2 text-sm font-bold text-foreground">{car.seats}</div></div>
-                <div className="rounded-[1.25rem] border border-border/40 bg-background/60 p-4"><div className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Luggage</div><div className="mt-2 text-sm font-bold text-foreground">{car.luggageCapacity} kg</div></div>
-                <div className="rounded-[1.25rem] border border-border/40 bg-background/60 p-4"><div className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Document</div><div className="mt-2 text-sm font-bold text-foreground">{car.documentPhoto ? "Uploaded" : "Missing"}</div></div>
-              </div>
-
-              <div className="flex flex-wrap gap-3">
-                {car.documentPhoto ? (
-                  <Button asChild variant="outline" className="rounded-2xl">
-                    <a href={car.documentPhoto} target="_blank" rel="noreferrer">Open registration doc</a>
-                  </Button>
-                ) : null}
-              </div>
-
-              {car.documentPhoto || car.verified ? (
-                <form action={setCarVerificationAction} className="flex flex-col gap-3 sm:flex-row">
-                  <input type="hidden" name="carId" value={car.id} />
-                  <input type="hidden" name="nextState" value={car.verified ? "false" : "true"} />
-                  <SubmitButton className="rounded-2xl font-black uppercase tracking-[0.18em]" pendingText="Updating...">
-                    {car.verified ? "Revoke vehicle verification" : "Approve vehicle verification"}
-                  </SubmitButton>
-                </form>
-              ) : (
-                <div className="rounded-[1.25rem] border border-dashed border-border/60 bg-muted/10 p-4 text-sm font-medium text-muted-foreground">
-                  No registration document has been uploaded for this vehicle.
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+    <div className="page-content">
+      <h1 className="page-title">Vehicle review</h1>
+      <Notice error={error} />
+      <form>
+        <label className="field">
+          Search name or registration
+          <input name="q" className="control" defaultValue={q} />
+        </label>
+      </form>
+      {rows.slice(0, 20).map((c) => (
+        <div className="panel" key={c.id}>
+          <h2 className="font-semibold">
+            {c.name} · {c.plateNumber}
+          </h2>
+          <p className="my-3 text-sm">
+            {c.verified ? "Approved" : "Awaiting approval"} · {c.seats}{" "}
+            passenger seats
+          </p>
+          {c.documentPhoto?.startsWith("/api/files/") && (
+            <a
+              className="text-sm text-primary"
+              href={c.documentPhoto}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Review vehicle documents ↗
+            </a>
+          )}
+          {!c.documentPhoto?.startsWith("/api/files/") && !c.verified && (
+            <p className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100">
+              No private vehicle document is available. You can still approve
+              this vehicle with an explicit override and a review note.
+            </p>
+          )}
+          <div className="my-4 rounded-xl border p-4 text-sm">
+            <p className="font-medium">Insurance</p>
+            <p className="mt-1 text-muted-foreground">
+              {c.insuranceProvider || "Provider not entered"} · {c.insuranceExpiry ? `Expires ${c.insuranceExpiry.toLocaleDateString("en-KE")}` : "No expiry date"}
+            </p>
+            {c.insuranceDocument?.startsWith("/api/files/") ? (
+              <a className="mt-2 inline-block text-primary" href={c.insuranceDocument} target="_blank" rel="noreferrer">Review insurance certificate ↗</a>
+            ) : <p className="mt-1 text-amber-700">No private insurance certificate uploaded.</p>}
+            <p className="mt-2">{c.insuranceVerifiedAt && c.insuranceExpiry && c.insuranceExpiry > new Date() ? "Verified and current" : "Not verified or expired"}</p>
+            {c.insuranceVerificationNote && <p className="mt-1 text-muted-foreground">Review note: {c.insuranceVerificationNote}</p>}
+            <form action={setCarInsuranceAction} className="mt-3 space-y-3">
+              <input type="hidden" name="carId" value={c.id} />
+              <label className="field">Insurance review note<input className="control" name="note" maxLength={1000} minLength={10} required /></label>
+              <select className="control" name="nextState" defaultValue="false">
+                <option value="true">Verify current certificate</option>
+                <option value="false">Reject / revoke verification</option>
+              </select>
+              <SubmitButton>Save insurance review</SubmitButton>
+            </form>
+          </div>
+          <form action={setCarVerificationAction} className="mt-4 space-y-3">
+            <input type="hidden" name="carId" value={c.id} />
+            <label className="field">
+              Decision
+              <select className="control" name="nextState">
+                <option value="true">Approve</option>
+                <option value="false">Reject / revoke</option>
+              </select>
+            </label>
+            <label className="field">
+              Review note
+              <input
+                className="control"
+                name="note"
+                maxLength={1000}
+                required
+                minLength={10}
+              />
+            </label>
+            {!c.verified && !c.documentPhoto?.startsWith("/api/files/") && (
+              <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-amber-300 p-3 text-sm dark:border-amber-800">
+                <input
+                  className="mt-1 size-4 accent-primary"
+                  type="checkbox"
+                  name="bypassDocuments"
+                  value="yes"
+                />
+                <span>
+                  <span className="block font-medium">
+                    Approve without uploaded documents
+                  </span>
+                  <span className="mt-1 block text-xs text-muted-foreground">
+                    Record why you approved it in the review note.
+                  </span>
+                </span>
+              </label>
+            )}
+            <SubmitButton>Save decision</SubmitButton>
+          </form>
+        </div>
+      ))}
+      <nav className="flex justify-between">
+        {page > 1 ? (
+          <Link href={`?page=${page - 1}&q=${encodeURIComponent(q ?? "")}`}>
+            ← Previous
+          </Link>
+        ) : (
+          <span />
+        )}
+        {rows.length > 20 && (
+          <Link href={`?page=${page + 1}&q=${encodeURIComponent(q ?? "")}`}>
+            Next →
+          </Link>
+        )}
+      </nav>
     </div>
   );
 }
