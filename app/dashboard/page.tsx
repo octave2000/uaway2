@@ -1,165 +1,167 @@
+import Link from "next/link";
+import { and, eq, asc, gt, count, isNull } from "drizzle-orm";
 import { db } from "@/db";
-import { bookings, cars, journeys, payments, payoutRequests, users } from "@/db/schema";
-import { eq, desc, and, ne, count, isNotNull } from "drizzle-orm";
-import { AdminDashboard } from "@/components/dashboard/admin-dashboard";
+import {
+  users,
+  bookings,
+  journeys,
+  outbox,
+  supportCases,
+  refunds,
+  payoutRequests,
+} from "@/db/schema";
+import { requireAuthenticatedUser, requireSuperAdmin } from "@/lib/auth/roles";
+import { formatDeparture } from "@/lib/domain/policy";
 import { OnboardingGate } from "@/components/dashboard/onboarding-gate";
-import { PassengerDashboard } from "@/components/dashboard/passenger-dashboard";
-import { DriverDashboard } from "@/components/dashboard/driver-dashboard";
-import { requireAuthenticatedUser } from "@/lib/auth/roles";
-import { autoCompleteExpiredJourneys } from "@/lib/journeys/lifecycle";
-
-export default async function DashboardHome() {
+export default async function Dashboard() {
   const { userId, role, name } = await requireAuthenticatedUser();
-
-  await autoCompleteExpiredJourneys();
-
-  if (!role) {
-    return <OnboardingGate />;
-  }
-
+  if (!role) return <OnboardingGate />;
+  const [user] = await db.select().from(users).where(eq(users.id, userId));
   if (role === "super_admin") {
-    const [
-      totalUsersResult,
-      activeJourneysResult,
-      totalBookingsResult,
-      successfulPaymentsResult,
-      pendingPayoutRequestsResult,
-      pendingUsers,
-      pendingVehicles,
-      recentPayments,
-    ] = await Promise.all([
-      db.select({ count: count() }).from(users),
+    await requireSuperAdmin();
+    const [cases, refundCount, payoutCount] = await Promise.all([
       db
-        .select({ count: count() })
-        .from(journeys)
-        .where(eq(journeys.status, "active")),
-      db.select({ count: count() }).from(bookings),
+        .select({ n: count() })
+        .from(supportCases)
+        .where(eq(supportCases.status, "open")),
       db
-        .select({ amount: payments.amount })
-        .from(payments)
-        .where(eq(payments.status, "success")),
+        .select({ n: count() })
+        .from(refunds)
+        .where(eq(refunds.status, "pending")),
       db
-        .select({ count: count() })
+        .select({ n: count() })
         .from(payoutRequests)
         .where(eq(payoutRequests.status, "pending")),
-      db
-        .select({
-          id: users.id,
-          name: users.name,
-          email: users.email,
-        })
-        .from(users)
-        .where(
-          and(
-            eq(users.verified, false),
-            isNotNull(users.idPhoto),
-            isNotNull(users.selfiePhoto),
-          ),
-        )
-        .limit(4),
-      db
-        .select({
-          id: cars.id,
-          name: cars.name,
-          plateNumber: cars.plateNumber,
-          driverName: users.name,
-        })
-        .from(cars)
-        .innerJoin(users, eq(cars.driverId, users.id))
-        .where(and(eq(cars.verified, false), isNotNull(cars.documentPhoto)))
-        .limit(4),
-      db
-        .select({
-          id: payments.id,
-          amount: payments.amount,
-          status: payments.status,
-          passengerName: users.name,
-          origin: journeys.origin,
-          destination: journeys.destination,
-        })
-        .from(payments)
-        .innerJoin(bookings, eq(payments.bookingId, bookings.id))
-        .innerJoin(journeys, eq(bookings.journeyId, journeys.id))
-        .innerJoin(users, eq(bookings.clientId, users.id))
-        .orderBy(desc(payments.createdAt))
-        .limit(3),
     ]);
-
     return (
-      <AdminDashboard
-        userName={name || "Admin"}
-        stats={{
-          totalUsers: totalUsersResult[0]?.count ?? 0,
-          activeJourneys: activeJourneysResult[0]?.count ?? 0,
-          totalBookings: totalBookingsResult[0]?.count ?? 0,
-          successfulPayments: successfulPaymentsResult.reduce((sum, row) => sum + row.amount, 0),
-          pendingIdentityReviews: pendingUsers.length,
-          pendingVehicleReviews: pendingVehicles.length,
-          pendingPayoutRequests: pendingPayoutRequestsResult[0]?.count ?? 0,
-        }}
-        pendingUsers={pendingUsers}
-        pendingVehicles={pendingVehicles}
-        recentPayments={recentPayments}
-      />
+      <div className="page-content">
+        <h1 className="page-title">Operations</h1>
+        <p className="page-description">
+          Keep journeys moving and resolve what needs attention.
+        </p>
+        <div className="grid gap-4 md:grid-cols-3">
+          {[
+            ["Open support cases", cases[0].n, "support"],
+            ["Refunds to process", refundCount[0].n, "payments"],
+            ["Payouts to process", payoutCount[0].n, "payments"],
+          ].map(([label, n, path]) => (
+            <Link
+              className="panel"
+              href={`/dashboard/admin/${path}`}
+              key={label}
+            >
+              <p className="text-sm text-muted-foreground">{label}</p>
+              <strong className="mt-3 block text-3xl">{n}</strong>
+            </Link>
+          ))}
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          {[
+            "users",
+            "vehicles",
+            "journeys",
+            "bookings",
+            "payments",
+            "support",
+          ].map((section) => (
+            <Link
+              className="panel capitalize"
+              key={section}
+              href={`/dashboard/admin/${section}`}
+            >
+              {section} →
+            </Link>
+          ))}
+        </div>
+      </div>
     );
   }
-
-  // Fetch role-specific data
-  if (role === "passenger") {
-    const [recentJourneys, upcomingBooking] = await Promise.all([
-      db.select({
-        journey: journeys,
-        driver: { name: users.name, image: users.image },
-        car: { name: cars.name }
-      }).from(journeys)
-        .innerJoin(users, eq(journeys.driverId, users.id))
-        .innerJoin(cars, eq(journeys.carId, cars.id))
-        .where(and(eq(journeys.status, "active"), ne(journeys.driverId, userId)))
-        .orderBy(desc(journeys.createdAt))
-        .limit(3),
-      db.select({
-        booking: bookings,
-        journey: journeys,
-        driver: { name: users.name, image: users.image }
-      }).from(bookings)
-        .innerJoin(journeys, eq(bookings.journeyId, journeys.id))
-        .innerJoin(users, eq(journeys.driverId, users.id))
-        .where(and(eq(bookings.clientId, userId), eq(bookings.status, "confirmed")))
-        .orderBy(desc(journeys.departureTime))
-        .limit(1)
-    ]);
-
-    return (
-      <PassengerDashboard 
-        userName={name || "User"}
-        recentJourneys={recentJourneys}
-        upcomingBooking={upcomingBooking[0] || null}
-      />
-    );
-  } else {
-    // Driver Data
-    const [myActiveJourneys, pendingPayoutRequests] = await Promise.all([
-      db.select()
-        .from(journeys)
-        .where(and(eq(journeys.driverId, userId), ne(journeys.status, "completed")))
-        .orderBy(desc(journeys.createdAt)),
-      db.select({ count: count() })
-        .from(payoutRequests)
-        .where(and(eq(payoutRequests.driverId, userId), eq(payoutRequests.status, "pending")))
-    ]);
-
-    const pendingRideActions = myActiveJourneys.filter(
-      (journey) =>
-        (journey.status === "active" && Boolean(journey.startRequestedAt)) ||
-        (journey.status === "ongoing" && Boolean(journey.endRequestedAt)),
-    ).length;
-
-    return (
-      <DriverDashboard 
-        userName={name || "User"}
-        activeJourneys={myActiveJourneys}
-        actionItemsCount={pendingRideActions + pendingPayoutRequests[0].count}
-      />
-    );
-  }
+  const [upcoming, notifications] = await Promise.all([
+    db
+      .select({ b: bookings, j: journeys })
+      .from(bookings)
+      .innerJoin(journeys, eq(bookings.journeyId, journeys.id))
+      .where(
+        and(
+          eq(bookings.clientId, userId),
+          eq(bookings.status, "confirmed"),
+          gt(journeys.departureTime, new Date()),
+        ),
+      )
+      .orderBy(asc(journeys.departureTime))
+      .limit(1),
+    db
+      .select({ n: count() })
+      .from(outbox)
+      .where(and(eq(outbox.userId, userId), isNull(outbox.readAt))),
+  ]);
+  return (
+    <div className="page-content">
+      <p className="text-xs font-medium tracking-widest text-primary">
+        WELCOME BACK
+      </p>
+      <h1 className="page-title">
+        Hello, {name?.split(" ")[0] || "traveller"}.
+      </h1>
+      <p className="page-description">
+        {role === "driver"
+          ? "Your next journey starts with an open seat."
+          : "Where will your next journey take you?"}
+      </p>
+      {(!user.verified || !user.emailVerified) && (
+        <Link href="/dashboard/profile" className="panel border-amber-300">
+          <h2 className="font-semibold">Finish setting up your account</h2>
+          <p className="mt-2 text-sm">
+            Verify your email and identity to book or offer a ride. Continue →
+          </p>
+        </Link>
+      )}
+      <div className="grid gap-4 md:grid-cols-2">
+        <Link
+          href={role === "driver" ? "/dashboard/journeys/new" : "/rides"}
+          className="rounded-2xl bg-primary p-6 text-primary-foreground"
+        >
+          <h2 className="text-2xl font-semibold">
+            {role === "driver" ? "Offer a ride" : "Find a ride"}
+          </h2>
+          <p className="mt-3 text-sm">
+            {role === "driver"
+              ? "Publish a journey and share the road."
+              : "Explore upcoming rides across Kenya."}{" "}
+            →
+          </p>
+        </Link>
+        <Link
+          href={
+            role === "driver" ? "/dashboard/journeys" : "/dashboard/bookings"
+          }
+          className="panel"
+        >
+          <h2 className="text-2xl font-semibold">
+            {role === "driver" ? "Manage journeys" : "My bookings"}
+          </h2>
+          <p className="mt-3 text-sm text-muted-foreground">
+            Your plans, payments, and next steps in one place. →
+          </p>
+        </Link>
+      </div>
+      {upcoming[0] && (
+        <Link
+          className="panel"
+          href={`/dashboard/bookings/${upcoming[0].b.id}`}
+        >
+          <p className="text-sm text-muted-foreground">Your next ride</p>
+          <h2 className="mt-2 text-xl font-semibold">
+            {upcoming[0].j.origin} → {upcoming[0].j.destination}
+          </h2>
+          <p className="mt-2 text-sm">
+            {formatDeparture(upcoming[0].j.departureTime)}
+          </p>
+        </Link>
+      )}
+      <Link href="/dashboard/notifications" className="text-sm text-primary">
+        {notifications[0].n} unread updates →
+      </Link>
+    </div>
+  );
 }
