@@ -1,6 +1,7 @@
+import { hasMfa, isAdminMfaRequired } from "./mfa";
 import { auth } from "@/auth";
 import { db } from "@/db";
-import { users } from "@/db/schema";
+import { users, adminGrants } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 
@@ -30,20 +31,36 @@ export function isConfiguredSuperAdminEmail(email: string | null | undefined) {
 
 export async function getUserRole(userId: string): Promise<AppRole | null> {
   const [user] = await db
-    .select({ defaultRole: users.defaultRole, email: users.email })
+    .select({
+      defaultRole: users.defaultRole,
+      email: users.email,
+      emailVerified: users.emailVerified,
+      suspended: users.suspended,
+    })
     .from(users)
     .where(eq(users.id, userId))
     .limit(1);
 
-  if (!user) {
+  if (!user || user.suspended) {
     return null;
   }
 
-  if (isConfiguredSuperAdminEmail(user.email)) {
+  const [grant] = await db
+    .select()
+    .from(adminGrants)
+    .where(eq(adminGrants.userId, userId));
+  if (
+    user.emailVerified &&
+    (grant || isConfiguredSuperAdminEmail(user.email))
+  ) {
     return "super_admin";
   }
 
-  return user.defaultRole ?? null;
+  return user.defaultRole === "driver"
+    ? "driver"
+    : user.defaultRole === "passenger"
+      ? "passenger"
+      : null;
 }
 
 export async function requireAuthenticatedUser(): Promise<AuthenticatedUserContext> {
@@ -61,7 +78,9 @@ export async function requireAuthenticatedUser(): Promise<AuthenticatedUserConte
   };
 }
 
-export async function requireRole(role: AppRole): Promise<AuthenticatedUserContext> {
+export async function requireRole(
+  role: AppRole,
+): Promise<AuthenticatedUserContext> {
   const user = await requireAuthenticatedUser();
 
   if (user.role !== role) {
@@ -72,5 +91,8 @@ export async function requireRole(role: AppRole): Promise<AuthenticatedUserConte
 }
 
 export async function requireSuperAdmin(): Promise<AuthenticatedUserContext> {
-  return requireRole("super_admin");
+  const user = await requireRole("super_admin");
+  if (isAdminMfaRequired() && !(await hasMfa(user.userId)))
+    redirect("/dashboard/security");
+  return user;
 }

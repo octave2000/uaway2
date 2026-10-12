@@ -1,0 +1,68 @@
+import { createHash, randomBytes } from "node:crypto";
+import { hash } from "bcryptjs";
+import { and, eq, gt, sql } from "drizzle-orm";
+import { HubMail } from "hubmail";
+import { db } from "@/db";
+import { users, recoveryTokens } from "@/db/schema";
+import { limit } from "@/lib/domain/shared";
+import { DomainError } from "@/lib/domain/policy";
+const digest = (value: string) =>
+  createHash("sha256").update(value).digest("hex");
+export async function sendAccountLink(
+  email: string,
+  purpose: "verify" | "reset",
+) {
+  await limit(`account-link:${email}`, 3, 15 * 60000);
+  const [user] = await db.select().from(users).where(eq(users.email, email));
+  if (!user || user.suspended) return;
+  const token = randomBytes(32).toString("hex");
+  await db
+    .insert(recoveryTokens)
+    .values({
+      tokenHash: digest(`${purpose}:${token}`),
+      userId: user.id,
+      expiresAt: new Date(Date.now() + 30 * 60000),
+    });
+  const url = new URL(`/account/${purpose}`, process.env.APP_URL);
+  url.searchParams.set("token", token);
+  await new HubMail({ apiKey: process.env.HUBMAIL_KEY! }).send({
+    from: process.env.AUTH_EMAIL_FROM!,
+    to: email,
+    subject:
+      purpose === "verify"
+        ? "Verify your Uaway email"
+        : "Reset your Uaway password",
+    text: `Open this link to ${purpose === "verify" ? "verify your email" : "reset your password"}:\n${url}\n\nThis link expires in 30 minutes. If you did not request it, ignore this email.`,
+  });
+}
+export async function consumeAccountLink(
+  token: string,
+  purpose: "verify" | "reset",
+  password?: string,
+) {
+  const passwordHash = password ? await hash(password, 12) : undefined;
+  await db.transaction(async (tx) => {
+    const [entry] = await tx
+      .delete(recoveryTokens)
+      .where(
+        and(
+          eq(recoveryTokens.tokenHash, digest(`${purpose}:${token}`)),
+          gt(recoveryTokens.expiresAt, new Date()),
+        ),
+      )
+      .returning();
+    if (!entry)
+      throw new DomainError(
+        "token",
+        "This link has expired or was already used. Request a new one.",
+      );
+    await tx
+      .update(users)
+      .set(
+        purpose === "verify"
+          ? { emailVerified: new Date() }
+          : { passwordHash, sessionVersion: sql`${users.sessionVersion}+1` },
+      )
+      .where(eq(users.id, entry.userId));
+  });
+}
