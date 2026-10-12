@@ -12,7 +12,11 @@ function subscribe() {
 
 export function ThemeToggle({ className }: { className?: string }) {
   const { theme, setTheme } = useTheme();
-  const mounted = useSyncExternalStore(subscribe, () => true, () => false);
+  const mounted = useSyncExternalStore(
+    subscribe,
+    () => true,
+    () => false,
+  );
 
   if (!mounted) {
     return null;
@@ -25,7 +29,7 @@ export function ThemeToggle({ className }: { className?: string }) {
       onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
       className={cn(
         "rounded-full transition-colors border border-border/50 bg-muted/40 hover:bg-muted/60",
-        className
+        className,
       )}
     >
       {theme === "dark" ? (
