@@ -55,7 +55,7 @@ export function OnboardingGate() {
         <div className="w-full max-w-5xl mx-auto flex flex-col items-center gap-6 md:gap-12">
           {/* Header Section */}
           <div className="flex flex-col items-center text-center gap-3">
-            <BrandLogo className="size-20" />
+            <BrandLogo className="h-20 w-52" />
             <div className="px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] md:text-xs font-black uppercase tracking-[0.2em]">
               Step 1: Setup Profile
             </div>

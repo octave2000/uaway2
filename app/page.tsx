@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { PublicShell } from "@/components/rides/public-shell";
+import { LandingHero } from "@/components/landing/hero";
 import { RideSearch } from "@/components/rides/search";
 import { RideCard } from "@/components/rides/card";
 import { searchRides } from "@/lib/domain/discovery";
@@ -7,19 +8,23 @@ export const dynamic = "force-dynamic";
 export default async function Home() {
   const { rows } = await searchRides({});
   return (
-    <PublicShell>
-      <section className="py-8 md:py-16">
-        <p className="mb-4 text-sm font-semibold text-primary">
-          GOOD COMPANY. BETTER JOURNEYS.
-        </p>
-        <h1 className="max-w-3xl text-4xl font-semibold leading-tight tracking-tight md:text-6xl">
-          Your next journey.
-          <br />A seat worth sharing.
-        </h1>
-        <p className="mb-8 mt-5 max-w-xl text-lg text-muted-foreground">
-          Travel across Kenya with verified people. Choose your ride, reserve a
-          seat, and pay securely with M-Pesa.
-        </p>
+    <PublicShell hero={<LandingHero />}>
+      <section
+        id="find-a-ride"
+        aria-labelledby="ride-search-title"
+        className="relative z-10 scroll-mt-6 pb-10 pt-4"
+      >
+        <div className="mb-5 flex flex-wrap items-baseline justify-between gap-2">
+          <h2
+            id="ride-search-title"
+            className="text-xl font-semibold tracking-tight"
+          >
+            Where are we heading?
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Your next seat is a search away.
+          </p>
+        </div>
         <RideSearch />
       </section>
       <section className="py-6">
