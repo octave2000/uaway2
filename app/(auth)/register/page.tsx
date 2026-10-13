@@ -43,7 +43,7 @@ export default async function RegisterPage({
   return (
     <main className="relative flex min-h-screen items-center justify-center px-4 py-20 bg-background overflow-hidden">
       <div className="w-full max-w-md relative z-10 flex flex-col gap-8">
-        <BrandLogo className="size-24 self-center" />
+        <BrandLogo className="h-24 w-64 self-center" />
 
         <Card className="rounded-2xl border bg-card shadow-sm overflow-hidden p-2 sm:p-4">
           <CardHeader className="text-center space-y-2">
