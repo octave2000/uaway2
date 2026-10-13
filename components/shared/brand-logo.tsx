@@ -14,16 +14,16 @@ export function BrandLogo({
       href={href}
       aria-label="Uaway home"
       className={cn(
-        "inline-flex shrink-0 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-black/5",
+        "relative inline-flex h-16 w-44 shrink-0 overflow-hidden rounded-lg bg-white",
         className,
       )}
     >
       <Image
-        src="/uaway-logo.jpeg"
+        src="/newlogo.jpg"
         alt=""
-        width={640}
-        height={640}
-        className="size-full object-contain"
+        width={256}
+        height={256}
+        className="absolute left-0 top-1/2 h-auto w-full -translate-y-1/2"
       />
     </Link>
   );

@@ -96,10 +96,7 @@ export function Sidebar({
   return (
     <div className="flex h-full flex-col bg-card w-full">
       <div className="flex h-16 items-center gap-3 border-b px-4">
-        <BrandLogo href="/dashboard" className="size-11" />
-        <span className="text-primary text-2xl font-semibold tracking-tight">
-          uaway.
-        </span>
+        <BrandLogo href="/dashboard" className="h-14 w-44" />
       </div>
       <div className="flex-1 overflow-auto py-6">
         <nav className="grid items-start px-2 text-sm font-medium lg:px-4 space-y-2">
