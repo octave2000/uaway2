@@ -27,7 +27,7 @@ export async function DashboardLayout({
       </aside>
       <div className="min-w-0 md:pl-60">
         <header className="flex h-16 items-center justify-between border-b bg-card px-5 md:px-8">
-          <BrandLogo href="/dashboard" className="size-12 md:hidden" />
+          <BrandLogo href="/dashboard" className="h-12 w-32 md:hidden" />
           <p className="hidden text-sm text-muted-foreground md:block">
             A little company. A better journey.
           </p>

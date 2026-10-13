@@ -63,7 +63,7 @@ export function Navbar({
         )}
       >
         {/* Logo */}
-        <BrandLogo className="size-14 transition-transform duration-300 hover:scale-105 md:size-16" />
+        <BrandLogo className="h-14 w-36 transition-transform duration-300 hover:scale-105 md:h-16 md:w-44" />
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center gap-2 bg-muted/30 p-1.5 rounded-full border border-border/50">
