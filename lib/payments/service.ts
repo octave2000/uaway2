@@ -122,6 +122,14 @@ export async function syncDarajaPaymentFromQuery(
     );
     await notify(
       tx,
+      `receipt:${payment.id}`,
+      booking.clientId,
+      "Payment receipt",
+      "Your payment receipt has been emailed to you.",
+      `/dashboard/bookings/${booking.id}`,
+    );
+    await notify(
+      tx,
       `passenger:${booking.id}`,
       journey.driverId,
       "New passenger",

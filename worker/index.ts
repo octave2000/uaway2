@@ -1,7 +1,6 @@
 import "dotenv/config";
 import { PgBoss } from "pg-boss";
 import { and, eq, isNull, lte, sql } from "drizzle-orm";
-import { HubMail } from "hubmail";
 import { db, sql as connection } from "@/db";
 import {
   bookings,
@@ -14,6 +13,8 @@ import {
 import { cancelBooking } from "@/lib/domain/reservations";
 import { reconcilePayments } from "@/lib/payments/service";
 import { audit, notify } from "@/lib/domain/shared";
+import { sendEmail } from "@/lib/email/mailer";
+import { renderOutboxEmail } from "@/lib/email/outbox";
 
 const boss = new PgBoss(process.env.DATABASE_URL!);
 boss.on("error", (error) =>
@@ -115,24 +116,16 @@ await boss.work("maintenance", async () => {
     );
 });
 await boss.work("email", async () => {
-  if (!process.env.HUBMAIL_KEY)
-    throw new Error("HUBMAIL_KEY is required for notification delivery");
-  const mail = new HubMail({ apiKey: process.env.HUBMAIL_KEY });
   const rows = await db
-    .select({ event: outbox, email: users.email })
+    .select({ event: outbox, email: users.email, name: users.name })
     .from(outbox)
     .innerJoin(users, eq(outbox.userId, users.id))
     .where(isNull(outbox.sentAt))
     .orderBy(outbox.createdAt)
     .limit(25);
-  for (const { event, email } of rows) {
+  for (const { event, email, name } of rows) {
     // In-app delivery is exactly once by outbox key. Email delivery is at least once.
-    await mail.send({
-      from: process.env.AUTH_EMAIL_FROM!,
-      to: email,
-      subject: event.title,
-      text: `${event.body}\n\n${process.env.APP_URL}${event.href}`,
-    });
+    await sendEmail(email, await renderOutboxEmail(event, name));
     await db
       .update(outbox)
       .set({ sentAt: new Date() })
