@@ -1,11 +1,12 @@
 import { createHash, randomBytes } from "node:crypto";
 import { hash } from "bcryptjs";
 import { and, eq, gt, sql } from "drizzle-orm";
-import { HubMail } from "hubmail";
 import { db } from "@/db";
 import { users, recoveryTokens } from "@/db/schema";
 import { limit } from "@/lib/domain/shared";
 import { DomainError } from "@/lib/domain/policy";
+import { sendEmail } from "@/lib/email/mailer";
+import { accountLinkEmail } from "@/lib/email/templates";
 const digest = (value: string) =>
   createHash("sha256").update(value).digest("hex");
 export async function sendAccountLink(
@@ -15,6 +16,7 @@ export async function sendAccountLink(
   await limit(`account-link:${email}`, 3, 15 * 60000);
   const [user] = await db.select().from(users).where(eq(users.email, email));
   if (!user || user.suspended) return;
+  if (purpose === "verify" && user.emailVerified) return;
   const token = randomBytes(32).toString("hex");
   await db
     .insert(recoveryTokens)
@@ -25,15 +27,15 @@ export async function sendAccountLink(
     });
   const url = new URL(`/account/${purpose}`, process.env.APP_URL);
   url.searchParams.set("token", token);
-  await new HubMail({ apiKey: process.env.HUBMAIL_KEY! }).send({
-    from: process.env.AUTH_EMAIL_FROM!,
-    to: email,
-    subject:
-      purpose === "verify"
-        ? "Verify your Uaway email"
-        : "Reset your Uaway password",
-    text: `Open this link to ${purpose === "verify" ? "verify your email" : "reset your password"}:\n${url}\n\nThis link expires in 30 minutes. If you did not request it, ignore this email.`,
-  });
+  try {
+    await sendEmail(email, accountLinkEmail(purpose, url.toString(), user.name));
+  } catch (error) {
+    console.error("Account link delivery failed", error);
+    throw new DomainError(
+      "email",
+      "We couldn't send the email right now. Please try again shortly.",
+    );
+  }
 }
 export async function consumeAccountLink(
   token: string,
@@ -61,7 +63,12 @@ export async function consumeAccountLink(
       .set(
         purpose === "verify"
           ? { emailVerified: new Date() }
-          : { passwordHash, sessionVersion: sql`${users.sessionVersion}+1` },
+          : {
+              passwordHash,
+              sessionVersion: sql`${users.sessionVersion}+1`,
+              // Opening the reset link proves the user controls the inbox.
+              emailVerified: sql`coalesce(${users.emailVerified}, now())`,
+            },
       )
       .where(eq(users.id, entry.userId));
   });
