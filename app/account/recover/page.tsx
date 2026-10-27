@@ -2,7 +2,8 @@ import { z } from "zod";
 import { PublicShell } from "@/components/rides/public-shell";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { sendAccountLink } from "@/lib/auth/recovery";
-import { redirect } from "next/navigation";
+import { Notice } from "@/components/shared/notice";
+import { runAction } from "@/lib/domain/action";
 async function recover(data: FormData) {
   "use server";
   const email = z
@@ -11,20 +12,22 @@ async function recover(data: FormData) {
     .email()
     .transform((v) => v.toLowerCase())
     .parse(data.get("email"));
-  await sendAccountLink(email, "reset");
-  redirect("/account/recover?sent=1");
+  await runAction("/account/recover?sent=1", () =>
+    sendAccountLink(email, "reset"),
+  );
 }
 export default async function Recover({
   searchParams,
 }: {
-  searchParams: Promise<{ sent?: string }>;
+  searchParams: Promise<{ sent?: string; error?: string }>;
 }) {
-  const { sent } = await searchParams;
+  const { sent, error } = await searchParams;
   return (
     <PublicShell>
       <div className="mx-auto max-w-md">
         <h1 className="page-title">Reset your password</h1>
-        {sent ? (
+        <Notice error={error} />
+        {sent && !error ? (
           <p className="mt-5" role="status">
             If an account exists, a reset link has been sent. Check your inbox.
           </p>

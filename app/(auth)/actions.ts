@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 
 import { signIn, signOut } from "@/auth";
 import { createCredentialsUser, UserAlreadyExistsError } from "@/db/users";
+import { sendAccountLink } from "@/lib/auth/recovery";
 
 import {
   credentialsFormSchema,
@@ -90,6 +91,13 @@ export async function registerWithPassword(formData: FormData): Promise<void> {
     }
 
     throw error;
+  }
+
+  try {
+    await sendAccountLink(parsedRegistration.data.email, "verify");
+  } catch {
+    // Registration must not fail on mail delivery; the user can resend from their profile.
+    console.error("Verification email delivery failed");
   }
 
   await signIn("credentials", {

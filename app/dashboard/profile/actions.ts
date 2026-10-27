@@ -75,11 +75,11 @@ export async function submitVerificationAction(formData: FormData) {
 export async function verifyEmailAction() {
   const session = await auth();
   if (!session?.user?.email) throw new Error("Unauthorized");
+  const email = session.user.email;
   const { sendAccountLink } = await import("@/lib/auth/recovery");
-  await sendAccountLink(session.user.email, "verify");
-  const { redirect } = await import("next/navigation");
-  redirect(
+  await runAction(
     "/dashboard/profile?notice=Check+your+inbox+for+the+verification+link.",
+    () => sendAccountLink(email, "verify"),
   );
 }
 export async function revokeSessionsAction() {

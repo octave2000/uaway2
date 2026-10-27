@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { eq } from "drizzle-orm";
+import QRCode from "qrcode";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { requireRole } from "@/lib/auth/roles";
@@ -54,6 +55,22 @@ export default async function Security({
   const { userId } = await requireRole("super_admin");
   const [user] = await db.select().from(users).where(eq(users.id, userId));
   const pending = (await cookies()).get("uaway-mfa-setup")?.value;
+  const pendingSecret =
+    !user.adminTotpSecret && pending ? decryptSecret(pending) : null;
+  const qr = pendingSecret
+    ? await QRCode.toString(
+        `otpauth://totp/${encodeURIComponent(`Uaway:${user.email ?? userId}`)}?${new URLSearchParams(
+          {
+            secret: pendingSecret,
+            issuer: "Uaway",
+            algorithm: "SHA1",
+            digits: "6",
+            period: "30",
+          },
+        )}`,
+        { type: "svg", margin: 1 },
+      )
+    : null;
   return (
     <div className="page-content">
       <h1 className="page-title">Administrator verification</h1>
@@ -67,14 +84,26 @@ export default async function Security({
         </form>
       ) : (
         <div className="panel">
-          {!user.adminTotpSecret && pending && (
+          {pendingSecret && qr && (
             <>
               <p>
-                Add a time-based account named Uaway in your authenticator using
-                this secret:
+                Scan this QR code with your authenticator app, then enter the
+                six-digit code it shows.
               </p>
-              <code className="my-5 block break-all rounded-lg bg-muted p-4">
-                {decryptSecret(pending)}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={`data:image/svg+xml;utf8,${encodeURIComponent(qr)}`}
+                alt="Authenticator setup QR code"
+                width={224}
+                height={224}
+                className="my-5 rounded-lg bg-white p-2"
+              />
+              <p className="text-sm text-muted-foreground">
+                Can&apos;t scan? Add a time-based account named Uaway using this
+                secret:
+              </p>
+              <code className="mt-2 mb-5 block break-all rounded-lg bg-muted p-4">
+                {pendingSecret}
               </code>
             </>
           )}
