@@ -44,4 +44,4 @@ next-env.d.ts
 /playwright-report/
 /test-results/
 /coverage/
-.hubfly.build.json
+hubfly.build.json

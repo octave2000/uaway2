@@ -20,7 +20,9 @@ jobs:
       AUTH_GOOGLE_ID: test
       AUTH_GOOGLE_SECRET: test
       AUTH_EMAIL_FROM: test@example.invalid
-      HUBMAIL_KEY: test
+      SMTP_HOST: smtp.example.invalid
+      SMTP_USER: test
+      SMTP_PASSWORD: test
       APP_URL: http://localhost:3000
       AUTH_TRUST_HOST: "true"
     steps:
