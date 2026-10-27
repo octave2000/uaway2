@@ -5,12 +5,13 @@ import type { EmailConfig } from "next-auth/providers/email";
 import Google, { type GoogleProfile } from "next-auth/providers/google";
 import { compare } from "bcryptjs";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
-import { HubMail } from "hubmail";
 import { z } from "zod";
 
 import { db } from "@/db";
 import { eq } from "drizzle-orm";
 import { limit } from "@/lib/domain/shared";
+import { sendEmail } from "@/lib/email/mailer";
+import { magicLinkEmail } from "@/lib/email/templates";
 import { accounts, users, verificationTokens } from "@/db/schema";
 import {
   getUserByEmail,
@@ -32,62 +33,17 @@ const authEnvSchema = z.object({
   AUTH_GOOGLE_ID: z.string().min(1, "AUTH_GOOGLE_ID is required."),
   AUTH_GOOGLE_SECRET: z.string().min(1, "AUTH_GOOGLE_SECRET is required."),
   AUTH_EMAIL_FROM: z.string().min(1, "AUTH_EMAIL_FROM is required."),
-  HUBMAIL_KEY: z.string().min(1, "HUBMAIL_KEY is required."),
+  SMTP_HOST: z.string().min(1, "SMTP_HOST is required."),
+  SMTP_USER: z.string().min(1, "SMTP_USER is required."),
+  SMTP_PASSWORD: z.string().min(1, "SMTP_PASSWORD is required."),
 });
 
 const authEnv = authEnvSchema.parse(process.env);
-const hubmail = new HubMail({
-  apiKey: authEnv.HUBMAIL_KEY,
-});
 
 const credentialsSchema = z.object({
   email: z.string().trim().email().transform(normalizeEmail),
   password: z.string().min(8),
 });
-
-function buildMagicLinkEmail(params: {
-  expires: Date;
-  host: string;
-  url: string;
-}) {
-  const expiresAt = params.expires.toLocaleString("en-US", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
-
-  return {
-    subject: `Your magic link for ${params.host}`,
-    text: [
-      `Sign in to ${params.host}.`,
-      "",
-      params.url,
-      "",
-      `This link expires on ${expiresAt}.`,
-      "If you did not request it, you can safely ignore this email.",
-    ].join("\n"),
-    html: `
-      <div style="background:#f6f0e8;padding:32px 16px;font-family:Arial,Helvetica,sans-serif;color:#1d1814;">
-        <div style="max-width:560px;margin:0 auto;background:#fffaf5;border:1px solid rgba(51,35,24,.12);border-radius:24px;padding:32px;">
-          <p style="margin:0 0 12px;font-size:12px;letter-spacing:.32em;text-transform:uppercase;color:#9f421b;">Uaway</p>
-          <h1 style="margin:0 0 16px;font-size:28px;line-height:1.15;">Use your magic link</h1>
-          <p style="margin:0 0 24px;font-size:16px;line-height:1.7;color:#6e6257;">
-            Click the button below to sign in to <strong>${params.host}</strong>. This link expires on ${expiresAt}.
-          </p>
-          <a
-            href="${params.url}"
-            style="display:inline-block;border-radius:999px;background:#cc6231;color:#ffffff;padding:14px 22px;text-decoration:none;font-weight:700;"
-          >
-            Sign in
-          </a>
-          <p style="margin:24px 0 0;font-size:14px;line-height:1.7;color:#6e6257;">
-            If the button does not work, paste this URL into your browser:<br />
-            <a href="${params.url}" style="color:#9f421b;word-break:break-all;">${params.url}</a>
-          </p>
-        </div>
-      </div>
-    `,
-  };
-}
 
 const magicLinkProvider = {
   id: "email",
@@ -98,26 +54,13 @@ const magicLinkProvider = {
   async sendVerificationRequest({
     expires,
     identifier,
-    provider,
     request,
     url,
   }) {
     await limit(`magic:${identifier}`, 3, 15 * 60000);
     const host = new URL(request.url).host;
-    const email = buildMagicLinkEmail({
-      expires,
-      host,
-      url,
-    });
     try {
-      const data = await hubmail.send({
-        from: provider.from ?? authEnv.AUTH_EMAIL_FROM,
-        to: identifier,
-        subject: email.subject,
-        text: email.text,
-        html: email.html,
-      });
-      void data;
+      await sendEmail(identifier, magicLinkEmail(host, url, expires));
     } catch (error) {
       console.error("Magic link delivery failed");
       throw error;

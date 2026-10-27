@@ -60,11 +60,7 @@ export function OnboardingGate() {
               Step 1: Setup Profile
             </div>
             <h1 className="text-3xl md:text-7xl font-black tracking-tighter text-foreground leading-none px-4">
-              How will you use{" "}
-              <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                UAWAY
-              </span>
-              ?
+              How will you use <span className="text-primary">UAWAY</span>?
             </h1>
             <p className="text-muted-foreground text-sm md:text-xl max-w-2xl font-medium leading-relaxed px-6">
               Pick your primary mode to get started. You can switch any time.
@@ -75,11 +71,14 @@ export function OnboardingGate() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 w-full max-w-4xl px-2">
             {/* Passenger Card */}
             <button
+              type="button"
+              aria-pressed={selected === "passenger"}
+              disabled={isSubmitting}
               onClick={() => setSelected("passenger")}
               className={cn(
                 "group relative flex flex-col items-start p-6 md:p-10 rounded-[2rem] md:rounded-[3rem] border-2 transition-all duration-700 text-left overflow-hidden min-h-[180px] md:min-h-0",
                 selected === "passenger"
-                  ? "bg-primary border-primary shadow-[0_40px_80px_-20px_rgba(var(--primary-rgb),0.5)] scale-[1.02] md:scale-[1.03]"
+                  ? "bg-primary border-primary shadow-xl shadow-primary/20 scale-[1.02] md:scale-[1.03]"
                   : "bg-muted/30 border-border/50 hover:border-primary/50 hover:bg-muted/50",
               )}
             >
@@ -88,14 +87,16 @@ export function OnboardingGate() {
                   className={cn(
                     "p-3 md:p-5 rounded-xl md:rounded-3xl transition-all duration-700",
                     selected === "passenger"
-                      ? "bg-white/20 rotate-12 scale-110"
+                      ? "bg-primary-foreground/10 rotate-12 scale-110"
                       : "bg-primary/10 group-hover:bg-primary/20",
                   )}
                 >
                   <MapPin
                     className={cn(
                       "w-6 h-6 md:w-12 md:h-12 transition-colors",
-                      selected === "passenger" ? "text-white" : "text-primary",
+                      selected === "passenger"
+                        ? "text-primary-foreground"
+                        : "text-primary",
                     )}
                   />
                 </div>
@@ -104,7 +105,7 @@ export function OnboardingGate() {
                   className={cn(
                     "p-2 rounded-lg md:rounded-xl flex items-center justify-center transition-all duration-700",
                     selected === "passenger"
-                      ? "bg-white text-primary"
+                      ? "bg-primary-foreground text-primary"
                       : "bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary",
                   )}
                 >
@@ -119,7 +120,9 @@ export function OnboardingGate() {
               <h3
                 className={cn(
                   "text-2xl md:text-4xl font-black mb-1 md:mb-4 transition-colors tracking-tight",
-                  selected === "passenger" ? "text-white" : "text-foreground",
+                  selected === "passenger"
+                    ? "text-primary-foreground"
+                    : "text-foreground",
                 )}
               >
                 Passenger
@@ -128,7 +131,7 @@ export function OnboardingGate() {
                 className={cn(
                   "text-xs md:text-lg font-medium leading-relaxed transition-colors mb-4 md:mb-8",
                   selected === "passenger"
-                    ? "text-white/80"
+                    ? "text-primary-foreground"
                     : "text-muted-foreground",
                 )}
               >
@@ -142,7 +145,7 @@ export function OnboardingGate() {
                       className={cn(
                         "w-4 h-4 md:w-6 md:h-6 rounded-full flex items-center justify-center transition-colors",
                         selected === "passenger"
-                          ? "bg-white/20"
+                          ? "bg-primary-foreground/10"
                           : "bg-primary/10",
                       )}
                     >
@@ -150,7 +153,7 @@ export function OnboardingGate() {
                         className={cn(
                           "w-2.5 h-2.5 md:w-3.5 md:h-3.5",
                           selected === "passenger"
-                            ? "text-white"
+                            ? "text-primary-foreground"
                             : "text-primary",
                         )}
                       />
@@ -159,7 +162,7 @@ export function OnboardingGate() {
                       className={cn(
                         "text-[10px] md:text-sm font-bold",
                         selected === "passenger"
-                          ? "text-white/90"
+                          ? "text-primary-foreground"
                           : "text-muted-foreground",
                       )}
                     >
@@ -181,11 +184,14 @@ export function OnboardingGate() {
 
             {/* Driver Card */}
             <button
+              type="button"
+              aria-pressed={selected === "driver"}
+              disabled={isSubmitting}
               onClick={() => setSelected("driver")}
               className={cn(
                 "group relative flex flex-col items-start p-6 md:p-10 rounded-[2rem] md:rounded-[3rem] border-2 transition-all duration-700 text-left overflow-hidden min-h-[180px] md:min-h-0",
                 selected === "driver"
-                  ? "bg-secondary border-secondary shadow-[0_40px_80px_-20px_rgba(var(--secondary-rgb),0.5)] scale-[1.02] md:scale-[1.03]"
+                  ? "bg-secondary border-secondary-foreground/40 shadow-xl shadow-secondary-foreground/15 scale-[1.02] md:scale-[1.03]"
                   : "bg-muted/30 border-border/50 hover:border-secondary/50 hover:bg-muted/50",
               )}
             >
@@ -194,14 +200,14 @@ export function OnboardingGate() {
                   className={cn(
                     "p-3 md:p-5 rounded-xl md:rounded-3xl transition-all duration-700",
                     selected === "driver"
-                      ? "bg-white/20 -rotate-12 scale-110"
+                      ? "bg-secondary-foreground/10 -rotate-12 scale-110"
                       : "bg-secondary/10 group-hover:bg-secondary/20",
                   )}
                 >
                   <Car
                     className={cn(
                       "w-6 h-6 md:w-12 md:h-12 transition-colors",
-                      selected === "driver" ? "text-white" : "text-secondary",
+                      "text-secondary-foreground",
                     )}
                   />
                 </div>
@@ -210,8 +216,8 @@ export function OnboardingGate() {
                   className={cn(
                     "p-2 rounded-lg md:rounded-xl flex items-center justify-center transition-all duration-700",
                     selected === "driver"
-                      ? "bg-white text-secondary"
-                      : "bg-muted text-muted-foreground group-hover:bg-secondary/10 group-hover:text-secondary",
+                      ? "bg-secondary-foreground text-secondary"
+                      : "bg-muted text-muted-foreground group-hover:bg-secondary/10 group-hover:text-secondary-foreground",
                   )}
                 >
                   {selected === "driver" ? (
@@ -225,7 +231,9 @@ export function OnboardingGate() {
               <h3
                 className={cn(
                   "text-2xl md:text-4xl font-black mb-1 md:mb-4 transition-colors tracking-tight",
-                  selected === "driver" ? "text-white" : "text-foreground",
+                  selected === "driver"
+                    ? "text-secondary-foreground"
+                    : "text-foreground",
                 )}
               >
                 Driver
@@ -234,7 +242,7 @@ export function OnboardingGate() {
                 className={cn(
                   "text-xs md:text-lg font-medium leading-relaxed transition-colors mb-4 md:mb-8",
                   selected === "driver"
-                    ? "text-white/80"
+                    ? "text-secondary-foreground"
                     : "text-muted-foreground",
                 )}
               >
@@ -248,16 +256,14 @@ export function OnboardingGate() {
                       className={cn(
                         "w-4 h-4 md:w-6 md:h-6 rounded-full flex items-center justify-center transition-colors",
                         selected === "driver"
-                          ? "bg-white/20"
+                          ? "bg-secondary-foreground/10"
                           : "bg-secondary/10",
                       )}
                     >
                       <f.icon
                         className={cn(
                           "w-2.5 h-2.5 md:w-3.5 md:h-3.5",
-                          selected === "driver"
-                            ? "text-white"
-                            : "text-secondary",
+                          "text-secondary-foreground",
                         )}
                       />
                     </div>
@@ -265,7 +271,7 @@ export function OnboardingGate() {
                       className={cn(
                         "text-[10px] md:text-sm font-bold",
                         selected === "driver"
-                          ? "text-white/90"
+                          ? "text-secondary-foreground"
                           : "text-muted-foreground",
                       )}
                     >
@@ -299,9 +305,9 @@ export function OnboardingGate() {
               "w-full h-14 md:h-20 rounded-[1.5rem] md:rounded-[2rem] text-lg md:text-2xl font-black transition-all duration-700 shadow-2xl",
               !selected && "opacity-50 grayscale",
               selected === "passenger" &&
-                "bg-primary hover:bg-primary/90 shadow-primary/30",
+                "bg-primary text-primary-foreground hover:bg-primary/90 shadow-primary/30",
               selected === "driver" &&
-                "bg-secondary hover:bg-secondary/90 shadow-secondary/30",
+                "bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-secondary/30",
             )}
           >
             {isSubmitting ? "Finishing..." : "Go to Dashboard"}
